@@ -50,5 +50,10 @@ def patch_remote_git() -> Generator[None, None, None]:
             return result
         return real_run_git(args, cwd=cwd, check=check)
 
-    with patch("shuttle.utils.process.run_git", side_effect=wrapper):
+    # Patch every module that binds run_git at import time.
+    targets = (
+        "shuttle.utils.process.run_git",
+        "shuttle.services.git_shortcuts.run_git",
+    )
+    with patch(targets[0], side_effect=wrapper), patch(targets[1], side_effect=wrapper):
         yield
