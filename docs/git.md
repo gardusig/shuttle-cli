@@ -9,6 +9,7 @@ Each command maps to a [cursor-skills git skill](https://github.com/gardusig/cur
 | `@git-branch` | `scripts/git/branch.sh` | `shuttle git branch` |
 | `@git-branch-delete` | `scripts/git/branch-delete.sh` | `shuttle git branch-delete` |
 | `@git-branch-delete-all` | `scripts/git/branch-delete-all.sh` | `shuttle git branch-delete-all` |
+| `@git-branch-clear` | `scripts/git/branch-clear.sh` | `shuttle git branch-clear` |
 | `@git-cherry-pick` | `scripts/git/cherry-pick.sh` | `shuttle git cherry-pick` |
 | `@git-commit` | `scripts/git/commit.sh` | `shuttle git commit` |
 | `@git-docs` | `scripts/git/docs.sh` | `shuttle git docs` |
@@ -17,6 +18,7 @@ Each command maps to a [cursor-skills git skill](https://github.com/gardusig/cur
 | `@git-post-merge-cleanup` | `scripts/git/post-merge-cleanup.sh` | `shuttle git post-merge-cleanup` |
 | `@git-pull` | `scripts/git/pull.sh` | `shuttle git pull` |
 | `@git-push` | `scripts/git/push.sh` | `shuttle git push` |
+| `@git-ship` | `scripts/git/ship.sh` | `shuttle git ship` |
 | `@git-rebase` | `scripts/git/rebase.sh` | `shuttle git rebase` |
 | `@git-reset` | `scripts/git/reset.sh` | `shuttle git reset` |
 | `@git-revert` | `scripts/git/revert.sh` | `shuttle git revert` |
@@ -24,6 +26,7 @@ Each command maps to a [cursor-skills git skill](https://github.com/gardusig/cur
 | `@git-start` | `scripts/git/start.sh` | `shuttle git start` |
 | `@git-stash` | `scripts/git/stash.sh` | `shuttle git stash` |
 | `@git-tag` | `scripts/git/tag.sh` | `shuttle git tag` |
+| `@git-zip` | `scripts/git/zip.sh` | `shuttle git zip` |
 
 ## Internal read/write
 
@@ -42,9 +45,11 @@ Operations that mutate remote state or discard local work require confirmation:
 | Operation | Confirmation |
 | --- | --- |
 | `git push` | `--yes` or interactive prompt |
+| `git ship` | `--yes` or interactive prompt (shows branch + intent summary) |
 | `git main` (reset/clean) | `--yes` or interactive prompt |
 | `git reset` | `--yes` or interactive prompt |
 | `git branch-delete` | `--yes` or interactive prompt |
+| `git branch-clear` | `--yes` or interactive prompt; optional second prompt for remote branches |
 | `git stash drop/clear` | `--yes` or interactive prompt |
 | `git tag --push` | `--yes` or interactive prompt |
 
@@ -72,9 +77,46 @@ shuttle git start my-feature --align-main --yes
 ## Publish
 
 ```bash
+shuttle git ship              # interactive: branch summary → add + commit + push
+shuttle git ship --yes        # non-interactive
 shuttle git commit -m "wip"
 shuttle git push --yes
 ```
+
+`ship` shows a write gate with branch, dirty state, commit message, and intent (`add → commit → push`) before running.
+
+## Clear all branches (nuclear local reset)
+
+`branch-delete-all` removes only **merged** branches. `branch-clear` is stronger:
+
+```bash
+shuttle git branch-clear
+```
+
+1. Write gate — confirms hard reset + clean, checkout `main`, delete **every** local branch except `main` (lists branches in the prompt).
+2. Second prompt — optionally delete all remote branches on `origin` except `main` (default: keep remotes).
+
+Non-interactive full wipe:
+
+```bash
+shuttle git branch-clear --yes --delete-remote
+```
+
+## Tag and zip
+
+```bash
+shuttle git tag                    # annotated tag YYYY-MM-DD on HEAD
+shuttle git tag --push --yes       # non-interactive push
+shuttle git zip                    # zip today's tag → data/backups/YYYY-MM-DD.zip
+shuttle git zip 2026-06-11 -o out.zip
+```
+
+Interactive `tag` flow:
+
+1. Default name is **today's date** (`YYYY-MM-DD`).
+2. If the tag exists **locally** → prompt to replace (write gate).
+3. If `origin` exists → prompt to **push** (default no).
+4. If the tag exists on **origin** and you push → prompt to **force-push**.
 
 ## Review (workspace health)
 

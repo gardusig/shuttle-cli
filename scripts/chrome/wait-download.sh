@@ -12,11 +12,26 @@ if [[ ! -d "$DOWNLOADS_DIR" ]]; then
   exit 1
 fi
 
+file_mtime() {
+  local path="$1" value=""
+  value=$(stat -f "%m" "$path" 2>/dev/null || true)
+  if [[ "$value" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+  value=$(stat -c "%Y" "$path" 2>/dev/null || true)
+  if [[ "$value" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+  printf '0\n'
+}
+
 find_newest_html() {
   local newest="" newest_mtime=0 mtime path
   while IFS= read -r -d '' path; do
     [[ "$path" == *.crdownload ]] && continue
-    mtime=$(stat -f "%m" "$path" 2>/dev/null || echo 0)
+    mtime=$(file_mtime "$path")
     if [[ -n "$SINCE_EPOCH" && "$mtime" -le "$SINCE_EPOCH" ]]; then
       continue
     fi

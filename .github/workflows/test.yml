@@ -4,16 +4,47 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  unit:
+    name: Unit tests (macOS)
     runs-on: macos-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: ./scripts/bootstrap.sh
-      - run: bash -n scripts/chrome/*.sh
-      - run: source .venv/bin/activate && pytest -q
+      - name: Bootstrap
+        run: ./scripts/bootstrap.sh
+      - name: Shell syntax (chrome)
+        run: bash -n scripts/chrome/*.sh
+      - name: Pytest (≥80% coverage)
+        run: source .venv/bin/activate && pytest -q --cov=shuttle --cov-report=term-missing --cov-fail-under=80
+
+  integration:
+    name: Integration tests (Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build integration image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: shuttle-cli-integration:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run pytest, public endpoints, and smoke in container
+        env:
+          SHUTTLE_DOCKER_IMAGE: shuttle-cli-integration:ci
+          SHUTTLE_DOCKER_SKIP_BUILD: "1"
+        run: ./scripts/test-in-docker.sh

@@ -7,6 +7,7 @@ Shell wrappers for each [cursor-skills git skill](https://github.com/gardusig/cu
 | `branch.sh` | `git/branch` | `shuttle git branch` |
 | `branch-delete.sh` | `git/branch/delete` | `shuttle git branch-delete` |
 | `branch-delete-all.sh` | `git/branch/delete/all` | `shuttle git branch-delete-all` |
+| `branch-clear.sh` | `git/branch/clear` | `shuttle git branch-clear` |
 | `cherry-pick.sh` | `git/cherry/pick` | `shuttle git cherry-pick` |
 | `commit.sh` | `git/commit` | `shuttle git commit` |
 | `docs.sh` | `git/docs` | `shuttle git docs` |
@@ -15,6 +16,10 @@ Shell wrappers for each [cursor-skills git skill](https://github.com/gardusig/cu
 | `post-merge-cleanup.sh` | `git/post/merge/cleanup` | `shuttle git post-merge-cleanup` |
 | `pull.sh` | `git/pull` | `shuttle git pull` |
 | `push.sh` | `git/push` | `shuttle git push` |
+| `ship.sh` | `git/ship` | `shuttle git ship` |
+| `prep.sh` | `git/prep` | `shuttle git prep` |
+| `kick.sh` | `git/kick` | `shuttle git kick` |
+| `land.sh` | `git/land` | `shuttle git land` |
 | `rebase.sh` | `git/rebase` | `shuttle git rebase` |
 | `reset.sh` | `git/reset` | `shuttle git reset` |
 | `revert.sh` | `git/revert` | `shuttle git revert` |
@@ -22,6 +27,7 @@ Shell wrappers for each [cursor-skills git skill](https://github.com/gardusig/cu
 | `start.sh` | `git/start` | `shuttle git start` |
 | `stash.sh` | `git/stash` | `shuttle git stash` |
 | `tag.sh` | `git/tag` | `shuttle git tag` |
+| `zip.sh` | `git/zip` | `shuttle git zip` |
 
 Usage:
 

@@ -34,3 +34,15 @@ include = ["shuttle*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+  "integration: tests that may require Docker or external runtime isolation",
+]
+
+[tool.coverage.run]
+source = ["shuttle"]
+branch = false
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_empty = true

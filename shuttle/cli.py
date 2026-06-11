@@ -7,16 +7,18 @@ from shuttle.commands.backup import backup_app
 from shuttle.commands.bookmarks import bookmarks_app
 from shuttle.commands.drives import drives_app
 from shuttle.commands.git import git_app
+from shuttle.commands.links import links_app
 from shuttle.commands.notion import notion_app
 from shuttle.commands.restore import restore_app
 from shuttle.utils.logger import setup_logging
 
 app = typer.Typer(
     name="shuttle",
-    help="Git shortcuts, backups, and sync workflows for macOS.",
+    help="Git shortcuts, backups, and sync workflows for macOS. Run `shuttle links` for docs and scripts.",
     no_args_is_help=True,
 )
 
+app.add_typer(links_app, name="links")
 app.add_typer(git_app, name="git")
 app.add_typer(backup_app, name="backup")
 app.add_typer(restore_app, name="restore")
@@ -37,6 +39,7 @@ def main(
         raise typer.Exit()
     if ctx.invoked_subcommand is None and not version:
         typer.echo(ctx.get_help())
+        typer.echo("\nFull index: shuttle links  |  docs/README.md")
         raise typer.Exit()
     ctx.obj = {"verbose": verbose}
 

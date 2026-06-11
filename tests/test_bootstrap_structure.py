@@ -56,6 +56,7 @@ CURSOR_SKILLS_GIT_SCRIPTS = [
     "scripts/git/branch.sh",
     "scripts/git/branch-delete.sh",
     "scripts/git/branch-delete-all.sh",
+    "scripts/git/branch-clear.sh",
     "scripts/git/cherry-pick.sh",
     "scripts/git/commit.sh",
     "scripts/git/docs.sh",
@@ -64,6 +65,10 @@ CURSOR_SKILLS_GIT_SCRIPTS = [
     "scripts/git/post-merge-cleanup.sh",
     "scripts/git/pull.sh",
     "scripts/git/push.sh",
+    "scripts/git/ship.sh",
+    "scripts/git/prep.sh",
+    "scripts/git/kick.sh",
+    "scripts/git/land.sh",
     "scripts/git/rebase.sh",
     "scripts/git/reset.sh",
     "scripts/git/revert.sh",
@@ -71,6 +76,7 @@ CURSOR_SKILLS_GIT_SCRIPTS = [
     "scripts/git/start.sh",
     "scripts/git/stash.sh",
     "scripts/git/tag.sh",
+    "scripts/git/zip.sh",
 ]
 
 REQUIRED_PATHS = [

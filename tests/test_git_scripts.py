@@ -11,6 +11,7 @@ def test_all_cursor_skills_git_scripts_exist() -> None:
         "branch.sh",
         "branch-delete.sh",
         "branch-delete-all.sh",
+        "branch-clear.sh",
         "cherry-pick.sh",
         "commit.sh",
         "docs.sh",
@@ -19,6 +20,10 @@ def test_all_cursor_skills_git_scripts_exist() -> None:
         "post-merge-cleanup.sh",
         "pull.sh",
         "push.sh",
+        "ship.sh",
+        "prep.sh",
+        "kick.sh",
+        "land.sh",
         "rebase.sh",
         "reset.sh",
         "revert.sh",
@@ -26,6 +31,7 @@ def test_all_cursor_skills_git_scripts_exist() -> None:
         "start.sh",
         "stash.sh",
         "tag.sh",
+        "zip.sh",
     }
     found = {p.name for p in GIT_SCRIPTS.glob("*.sh") if p.name != "_common.sh"}
     assert found == expected

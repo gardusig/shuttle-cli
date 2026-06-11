@@ -37,6 +37,7 @@ def _mock_snapshot(snapshot: MagicMock):
         (["drives"], "drives: not implemented yet"),
         (["notion"], "notion: not implemented yet"),
         (["bookmarks"], "scripts/chrome/export-bookmarks.sh"),
+        (["links"], "Quick defaults"),
     ],
 )
 def test_placeholder_top_level_commands(args: list[str], needle: str) -> None:
@@ -48,7 +49,7 @@ def test_placeholder_top_level_commands(args: list[str], needle: str) -> None:
 def test_root_lists_all_top_level_groups() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    for name in ("git", "backup", "restore", "drives", "notion", "bookmarks"):
+    for name in ("links", "git", "backup", "restore", "drives", "notion", "bookmarks"):
         assert name in result.stdout
 
 
@@ -67,7 +68,14 @@ def test_git_review_passes(mock_review: MagicMock) -> None:
     result = runner.invoke(app, ["git", "review", "--no-install"])
     assert result.exit_code == 0
     assert "review passed" in result.stdout
-    mock_review.assert_called_once_with(install=False)
+    mock_review.assert_called_once_with(install=False, quick=False)
+
+
+@patch("shuttle.commands.git.run_review", return_value=0)
+def test_git_review_quick(mock_review: MagicMock) -> None:
+    result = runner.invoke(app, ["git", "review", "--no-install", "--quick"])
+    assert result.exit_code == 0
+    mock_review.assert_called_once_with(install=False, quick=True)
 
 
 @patch("shuttle.commands.git.run_review", return_value=1)
@@ -148,6 +156,7 @@ def test_git_start_safe_by_default(mock_start: MagicMock) -> None:
         ["git", "reset"],
         ["git", "branch-delete", "old"],
         ["git", "branch-delete-all"],
+        ["git", "branch-clear"],
         ["git", "post-merge-cleanup"],
         ["git", "stash", "drop"],
         ["git", "stash", "clear"],
@@ -201,6 +210,41 @@ def test_git_branch_delete_all_with_yes(mock_delete: MagicMock, snapshot: MagicM
     mock_delete.assert_called_once_with(yes=True)
 
 
+@patch.object(GitShortcuts, "remote_branch_names", return_value=[])
+@patch.object(GitShortcuts, "local_branch_names", return_value=["feat-a", "wip"])
+@patch.object(GitShortcuts, "clear_branches_local", return_value=["feat-a", "wip"])
+def test_git_branch_clear_with_yes(
+    mock_clear: MagicMock,
+    mock_local: MagicMock,
+    mock_remote: MagicMock,
+    snapshot: MagicMock,
+) -> None:
+    with _mock_snapshot(snapshot):
+        result = runner.invoke(app, ["git", "branch-clear", "--yes"])
+    assert result.exit_code == 0
+    assert "cleared 2 local branch" in result.stdout
+    mock_clear.assert_called_once_with(yes=True, keep_ignored=False)
+    mock_remote.assert_called_once()
+
+
+@patch.object(GitShortcuts, "delete_remote_branches", return_value=["feat-a"])
+@patch.object(GitShortcuts, "remote_branch_names", return_value=["feat-a"])
+@patch.object(GitShortcuts, "local_branch_names", return_value=[])
+@patch.object(GitShortcuts, "clear_branches_local", return_value=[])
+def test_git_branch_clear_delete_remote_with_yes(
+    mock_clear: MagicMock,
+    mock_local: MagicMock,
+    mock_remote: MagicMock,
+    mock_delete_remote: MagicMock,
+    snapshot: MagicMock,
+) -> None:
+    with _mock_snapshot(snapshot):
+        result = runner.invoke(app, ["git", "branch-clear", "--yes", "--delete-remote"])
+    assert result.exit_code == 0
+    assert "deleted 1 remote branch" in result.stdout
+    mock_delete_remote.assert_called_once_with(yes=True)
+
+
 @patch.object(GitShortcuts, "post_merge_cleanup", return_value=["merged"])
 def test_git_post_merge_cleanup_with_yes(mock_cleanup: MagicMock, snapshot: MagicMock) -> None:
     with _mock_snapshot(snapshot):
@@ -246,20 +290,40 @@ def test_git_cherry_pick_with_yes(mock_pick: MagicMock, snapshot: MagicMock) -> 
     mock_pick.assert_called_once()
 
 
-@patch.object(GitShortcuts, "tag", return_value="2026-06-11")
-def test_git_tag_local_only(mock_tag: MagicMock) -> None:
+@patch.object(GitShortcuts, "tag_exists_local", return_value=False)
+@patch.object(GitShortcuts, "tag_exists_remote", return_value=False)
+@patch.object(GitShortcuts, "remote_exists", return_value=False)
+@patch.object(GitShortcuts, "create_tag")
+def test_git_tag_local_only(
+    mock_create: MagicMock,
+    _remote: MagicMock,
+    _remote_tag: MagicMock,
+    _local: MagicMock,
+) -> None:
     result = runner.invoke(app, ["git", "tag", "2026-06-11"])
     assert result.exit_code == 0
     assert "2026-06-11" in result.stdout
-    mock_tag.assert_called_once()
+    mock_create.assert_called_once_with("2026-06-11", replace=False)
 
 
-@patch.object(GitShortcuts, "tag", return_value="2026-06-11")
-def test_git_tag_push_requires_yes(mock_tag: MagicMock, snapshot: MagicMock) -> None:
+@patch.object(GitShortcuts, "tag_exists_local", return_value=False)
+@patch.object(GitShortcuts, "tag_exists_remote", return_value=False)
+@patch.object(GitShortcuts, "remote_exists", return_value=True)
+@patch.object(GitShortcuts, "create_tag")
+@patch.object(GitShortcuts, "push_tag")
+def test_git_tag_push_requires_yes(
+    mock_push: MagicMock,
+    mock_create: MagicMock,
+    _remote: MagicMock,
+    _remote_tag: MagicMock,
+    _local: MagicMock,
+    snapshot: MagicMock,
+) -> None:
     with _mock_snapshot(snapshot):
         result = runner.invoke(app, ["git", "tag", "--push"])
     assert result.exit_code != 0
-    mock_tag.assert_not_called()
+    mock_create.assert_called_once()
+    mock_push.assert_not_called()
 
 
 @patch.object(GitShortcuts, "branch_prune")
@@ -286,17 +350,23 @@ GIT_PUBLIC_COMMANDS = (
     "pull",
     "commit",
     "push",
+    "ship",
+    "prep",
+    "kick",
+    "land",
     "start",
     "stash",
     "branch",
     "branch-delete",
     "branch-delete-all",
+    "branch-clear",
     "post-merge-cleanup",
     "rebase",
     "reset",
     "revert",
     "cherry-pick",
     "tag",
+    "zip",
     "review",
     "docs",
     "large-files",
