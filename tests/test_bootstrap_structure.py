@@ -56,6 +56,7 @@ CURSOR_SKILLS_GIT_SCRIPTS = [
     "scripts/git/branch.sh",
     "scripts/git/branch-delete.sh",
     "scripts/git/branch-delete-all.sh",
+    "scripts/git/branch-clear.sh",
     "scripts/git/cherry-pick.sh",
     "scripts/git/commit.sh",
     "scripts/git/docs.sh",

@@ -51,6 +51,8 @@ WRITE_GATED_OPERATIONS = frozenset(
         "branch-delete",
         "branch-delete-all",
         "branch-delete-action",
+        "branch-clear",
+        "branch-clear-remote",
         "post-merge-cleanup",
         "stash-drop",
         "stash-clear",

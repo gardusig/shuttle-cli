@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import sys
+
 import typer
 from rich import print as rprint
 
 from shuttle.internal.read.git import git_worktree_snapshot
-from shuttle.internal.write.gate import require_write_gate
+from shuttle.internal.write.gate import WRITE_GATE_DELIMITER, require_write_gate
 from shuttle.services.git_review import run_review
 from shuttle.services.git_shortcuts import GitShortcuts
 from shuttle.utils.config import project_root
@@ -14,6 +16,21 @@ git_app = typer.Typer(help="Git shortcuts (commit message defaults to '.').", no
 
 def _svc() -> GitShortcuts:
     return GitShortcuts()
+
+
+def _branch_preview_lines(
+    label: str,
+    branches: list[str],
+    *,
+    prefix: str = "",
+    limit: int = 20,
+) -> list[str]:
+    lines = [f"{label}: {len(branches)}"]
+    for name in branches[:limit]:
+        lines.append(f"  - {prefix}{name}")
+    if len(branches) > limit:
+        lines.append(f"  ... ({len(branches) - limit} more)")
+    return lines
 
 
 def _write_gate(
@@ -199,6 +216,80 @@ def branch_delete_all_cmd(
     _write_gate("branch-delete-all", yes=yes, question="Delete all merged branches?")
     deleted = _svc().branch_delete_all_merged(yes=True)
     rprint(f"[green]deleted[/green] {len(deleted)} branches")
+
+
+@git_app.command("branch-clear")
+def branch_clear_cmd(
+    yes: bool = typer.Option(False, "--yes", "-y"),
+    keep_ignored: bool = typer.Option(
+        False, "--keep-ignored", help="Use git clean -fd instead of -fdx."
+    ),
+    delete_remote: bool = typer.Option(
+        False,
+        "--delete-remote",
+        help="Also delete remote branches on origin (non-interactive; requires --yes).",
+    ),
+) -> None:
+    """Reset locally, checkout main, delete all branches except main."""
+    svc = _svc()
+    local_preview = svc.local_branch_names(exclude_main=True)
+    _write_gate(
+        "branch-clear",
+        yes=yes,
+        question=(
+            "Reset working tree, checkout main, and delete ALL local branches except main?"
+        ),
+        extra_lines=[
+            "warning: this clears everything locally",
+            *_branch_preview_lines("local_branches_to_delete", local_preview),
+        ],
+    )
+    local_deleted = svc.clear_branches_local(yes=True, keep_ignored=keep_ignored)
+    rprint(f"[green]cleared[/green] {len(local_deleted)} local branch(es)")
+
+    remote_preview = svc.remote_branch_names()
+    if not remote_preview:
+        return
+
+    do_remote = False
+    if delete_remote:
+        if not sys.stdin.isatty() and not yes:
+            raise typer.Exit("Pass --yes with --delete-remote in non-interactive mode.")
+        if sys.stdin.isatty() and not yes:
+            _write_gate(
+                "branch-clear-remote",
+                yes=False,
+                question="Also delete ALL remote branches on origin (except main)?",
+                extra_lines=_branch_preview_lines(
+                    "remote_branches_to_delete",
+                    remote_preview,
+                    prefix="origin/",
+                ),
+            )
+            do_remote = True
+        else:
+            do_remote = True
+    elif sys.stdin.isatty():
+        snapshot = git_worktree_snapshot(svc)
+        typer.echo(WRITE_GATE_DELIMITER)
+        typer.echo("operation: branch-clear-remote")
+        for line in snapshot.summary_lines():
+            typer.echo(line)
+        for line in _branch_preview_lines(
+            "remote_branches_to_delete",
+            remote_preview,
+            prefix="origin/",
+        ):
+            typer.echo(line)
+        typer.echo(WRITE_GATE_DELIMITER)
+        do_remote = typer.confirm(
+            "Also delete ALL remote branches on origin (except main)?",
+            default=False,
+        )
+
+    if do_remote:
+        remote_deleted = svc.delete_remote_branches(yes=True)
+        rprint(f"[green]deleted[/green] {len(remote_deleted)} remote branch(es)")
 
 
 @git_app.command("post-merge-cleanup")

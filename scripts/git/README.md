@@ -7,6 +7,7 @@ Shell wrappers for each [cursor-skills git skill](https://github.com/gardusig/cu
 | `branch.sh` | `git/branch` | `shuttle git branch` |
 | `branch-delete.sh` | `git/branch/delete` | `shuttle git branch-delete` |
 | `branch-delete-all.sh` | `git/branch/delete/all` | `shuttle git branch-delete-all` |
+| `branch-clear.sh` | `git/branch/clear` | `shuttle git branch-clear` |
 | `cherry-pick.sh` | `git/cherry/pick` | `shuttle git cherry-pick` |
 | `commit.sh` | `git/commit` | `shuttle git commit` |
 | `docs.sh` | `git/docs` | `shuttle git docs` |

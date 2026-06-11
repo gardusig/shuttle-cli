@@ -11,6 +11,7 @@ def test_all_cursor_skills_git_scripts_exist() -> None:
         "branch.sh",
         "branch-delete.sh",
         "branch-delete-all.sh",
+        "branch-clear.sh",
         "cherry-pick.sh",
         "commit.sh",
         "docs.sh",

@@ -27,6 +27,7 @@ shuttle git --help
 | Sync | `shuttle git pull` |
 | Align `main` | `shuttle git main --yes` |
 | Delete merged branch | `shuttle git branch-delete BRANCH --yes` |
+| Clear all branches (keep `main`) | `shuttle git branch-clear --yes` |
 | Tag release | `shuttle git tag --push --yes` |
 
 Short alias: `shuttle g push --yes` == `shuttle git push --yes`.

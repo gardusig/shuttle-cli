@@ -25,6 +25,18 @@ def test_branch_delete_refuses_without_yes() -> None:
         svc.branch_delete("feature", yes=False)
 
 
+def test_clear_branches_local_refuses_without_yes() -> None:
+    svc = GitShortcuts(top="/tmp")
+    with pytest.raises(RuntimeError, match="--yes"):
+        svc.clear_branches_local(yes=False)
+
+
+def test_delete_remote_branches_refuses_without_yes() -> None:
+    svc = GitShortcuts(top="/tmp")
+    with pytest.raises(RuntimeError, match="--yes"):
+        svc.delete_remote_branches(yes=False)
+
+
 @patch("shuttle.services.git_shortcuts.run_git")
 def test_start_does_not_align_main_by_default(mock_run: MagicMock) -> None:
     svc = GitShortcuts(top="/tmp")

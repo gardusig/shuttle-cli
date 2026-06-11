@@ -9,6 +9,7 @@ Each command maps to a [cursor-skills git skill](https://github.com/gardusig/cur
 | `@git-branch` | `scripts/git/branch.sh` | `shuttle git branch` |
 | `@git-branch-delete` | `scripts/git/branch-delete.sh` | `shuttle git branch-delete` |
 | `@git-branch-delete-all` | `scripts/git/branch-delete-all.sh` | `shuttle git branch-delete-all` |
+| `@git-branch-clear` | `scripts/git/branch-clear.sh` | `shuttle git branch-clear` |
 | `@git-cherry-pick` | `scripts/git/cherry-pick.sh` | `shuttle git cherry-pick` |
 | `@git-commit` | `scripts/git/commit.sh` | `shuttle git commit` |
 | `@git-docs` | `scripts/git/docs.sh` | `shuttle git docs` |
@@ -45,6 +46,7 @@ Operations that mutate remote state or discard local work require confirmation:
 | `git main` (reset/clean) | `--yes` or interactive prompt |
 | `git reset` | `--yes` or interactive prompt |
 | `git branch-delete` | `--yes` or interactive prompt |
+| `git branch-clear` | `--yes` or interactive prompt; optional second prompt for remote branches |
 | `git stash drop/clear` | `--yes` or interactive prompt |
 | `git tag --push` | `--yes` or interactive prompt |
 
@@ -74,6 +76,23 @@ shuttle git start my-feature --align-main --yes
 ```bash
 shuttle git commit -m "wip"
 shuttle git push --yes
+```
+
+## Clear all branches (nuclear local reset)
+
+`branch-delete-all` removes only **merged** branches. `branch-clear` is stronger:
+
+```bash
+shuttle git branch-clear
+```
+
+1. Write gate — confirms hard reset + clean, checkout `main`, delete **every** local branch except `main` (lists branches in the prompt).
+2. Second prompt — optionally delete all remote branches on `origin` except `main` (default: keep remotes).
+
+Non-interactive full wipe:
+
+```bash
+shuttle git branch-clear --yes --delete-remote
 ```
 
 ## Review (workspace health)

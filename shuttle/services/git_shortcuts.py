@@ -202,6 +202,69 @@ class GitShortcuts:
         self.align_main(yes=yes)
         return self.branch_delete_all_merged(yes=yes)
 
+    def local_branch_names(self, *, exclude_main: bool = True) -> list[str]:
+        out = run_git(
+            ["for-each-ref", "--format=%(refname:short)", "refs/heads/"],
+            cwd=self.top,
+        ).stdout
+        names = [line.strip() for line in out.splitlines() if line.strip()]
+        if exclude_main:
+            names = [name for name in names if name != "main"]
+        return sorted(names)
+
+    def remote_branch_names(self, remote: str = "origin") -> list[str]:
+        if not self.remote_exists(remote):
+            return []
+        out = run_git(
+            ["for-each-ref", "--format=%(refname:short)", f"refs/remotes/{remote}/"],
+            cwd=self.top,
+            check=False,
+        ).stdout
+        prefix = f"{remote}/"
+        names: list[str] = []
+        for line in out.splitlines():
+            ref = line.strip()
+            if not ref or ref.endswith("/HEAD") or ref == f"{remote}/HEAD":
+                continue
+            short = ref[len(prefix) :] if ref.startswith(prefix) else ref
+            if short in {"main", "HEAD"}:
+                continue
+            names.append(short)
+        return sorted(set(names))
+
+    def clear_branches_local(
+        self,
+        *,
+        yes: bool = False,
+        keep_ignored: bool = False,
+    ) -> list[str]:
+        """Align main (reset + clean), then delete every local branch except main."""
+        if not yes:
+            raise RuntimeError("Pass --yes to clear all local branches.")
+        self.align_main(yes=True, keep_ignored=keep_ignored)
+        deleted: list[str] = []
+        for name in self.local_branch_names(exclude_main=True):
+            run_git(["branch", "-D", name], cwd=self.top)
+            deleted.append(name)
+        return deleted
+
+    def delete_remote_branches(self, *, yes: bool = False, remote: str = "origin") -> list[str]:
+        if not yes:
+            raise RuntimeError("Pass --yes to delete remote branches.")
+        if not self.remote_exists(remote):
+            return []
+        self.fetch_all(prune=True)
+        deleted: list[str] = []
+        for name in self.remote_branch_names(remote):
+            result = run_git(
+                ["push", remote, "--delete", name],
+                cwd=self.top,
+                check=False,
+            )
+            if result.returncode == 0:
+                deleted.append(name)
+        return deleted
+
     def rebase(
         self,
         onto: str | None = None,

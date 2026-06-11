@@ -148,6 +148,7 @@ def test_git_start_safe_by_default(mock_start: MagicMock) -> None:
         ["git", "reset"],
         ["git", "branch-delete", "old"],
         ["git", "branch-delete-all"],
+        ["git", "branch-clear"],
         ["git", "post-merge-cleanup"],
         ["git", "stash", "drop"],
         ["git", "stash", "clear"],
@@ -199,6 +200,41 @@ def test_git_branch_delete_all_with_yes(mock_delete: MagicMock, snapshot: MagicM
     assert result.exit_code == 0
     assert "deleted 2 branches" in result.stdout
     mock_delete.assert_called_once_with(yes=True)
+
+
+@patch.object(GitShortcuts, "remote_branch_names", return_value=[])
+@patch.object(GitShortcuts, "local_branch_names", return_value=["feat-a", "wip"])
+@patch.object(GitShortcuts, "clear_branches_local", return_value=["feat-a", "wip"])
+def test_git_branch_clear_with_yes(
+    mock_clear: MagicMock,
+    mock_local: MagicMock,
+    mock_remote: MagicMock,
+    snapshot: MagicMock,
+) -> None:
+    with _mock_snapshot(snapshot):
+        result = runner.invoke(app, ["git", "branch-clear", "--yes"])
+    assert result.exit_code == 0
+    assert "cleared 2 local branch" in result.stdout
+    mock_clear.assert_called_once_with(yes=True, keep_ignored=False)
+    mock_remote.assert_called_once()
+
+
+@patch.object(GitShortcuts, "delete_remote_branches", return_value=["feat-a"])
+@patch.object(GitShortcuts, "remote_branch_names", return_value=["feat-a"])
+@patch.object(GitShortcuts, "local_branch_names", return_value=[])
+@patch.object(GitShortcuts, "clear_branches_local", return_value=[])
+def test_git_branch_clear_delete_remote_with_yes(
+    mock_clear: MagicMock,
+    mock_local: MagicMock,
+    mock_remote: MagicMock,
+    mock_delete_remote: MagicMock,
+    snapshot: MagicMock,
+) -> None:
+    with _mock_snapshot(snapshot):
+        result = runner.invoke(app, ["git", "branch-clear", "--yes", "--delete-remote"])
+    assert result.exit_code == 0
+    assert "deleted 1 remote branch" in result.stdout
+    mock_delete_remote.assert_called_once_with(yes=True)
 
 
 @patch.object(GitShortcuts, "post_merge_cleanup", return_value=["merged"])
@@ -291,6 +327,7 @@ GIT_PUBLIC_COMMANDS = (
     "branch",
     "branch-delete",
     "branch-delete-all",
+    "branch-clear",
     "post-merge-cleanup",
     "rebase",
     "reset",
