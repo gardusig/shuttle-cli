@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import os
 from pathlib import Path
 
 from shuttle.utils.process import GitCommandError, run_git
@@ -10,7 +11,7 @@ class GitShortcuts:
     """Local git operations with safety gates for destructive actions."""
 
     def __init__(self, top: str | None = None) -> None:
-        self.top = top or self.repo_root()
+        self.top = top or os.environ.get("SHUTTLE_GIT_ROOT") or self.repo_root()
 
     @staticmethod
     def repo_root() -> str:

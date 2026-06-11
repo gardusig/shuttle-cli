@@ -4,4 +4,5 @@
 2. [Git commands](git.md) — `shuttle git` reference
 3. [Chrome bookmarks](bookmarks.md) — export/import shell scripts
 4. [Configuration](configuration.md) — YAML config files
-5. [Architecture](architecture.md) — CLI → command → service → provider
+5. [Docker integration](docker.md) — isolated container checks
+6. [Architecture](architecture.md) — CLI → command → service → provider

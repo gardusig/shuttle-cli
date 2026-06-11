@@ -17,3 +17,9 @@ jobs:
       - run: ./scripts/bootstrap.sh
       - run: bash -n scripts/chrome/*.sh
       - run: source .venv/bin/activate && pytest -q
+
+  docker-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/test-in-docker.sh
