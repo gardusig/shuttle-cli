@@ -18,7 +18,7 @@ Shell wrappers for each [cursor-skills git skill](https://github.com/gardusig/cu
 | `push.sh` | `git/push` | `shuttle git push` |
 | `ship.sh` | `git/ship` | `shuttle git ship` |
 | `prep.sh` | `git/prep` | `shuttle git prep` |
-| `kickoff.sh` | `git/kickoff` | `shuttle git kickoff` |
+| `kick.sh` | `git/kick` | `shuttle git kick` |
 | `land.sh` | `git/land` | `shuttle git land` |
 | `rebase.sh` | `git/rebase` | `shuttle git rebase` |
 | `reset.sh` | `git/reset` | `shuttle git reset` |

@@ -49,7 +49,7 @@ WRITE_GATED_OPERATIONS = frozenset(
         "push",
         "ship",
         "prep",
-        "kickoff",
+        "kick",
         "land",
         "main",
         "reset",

@@ -1,4 +1,4 @@
-"""Workflow shortcuts: prep, kickoff, land."""
+"""Workflow shortcuts: prep, kick, land."""
 
 from __future__ import annotations
 
@@ -38,18 +38,18 @@ def test_git_prep_with_yes(mock_prep: MagicMock, snapshot: MagicMock) -> None:
     mock_prep.assert_called_once_with(yes=True, keep_ignored=False)
 
 
-@patch.object(GitShortcuts, "kickoff", return_value="issue-9-docker")
+@patch.object(GitShortcuts, "kick", return_value="issue-9-docker")
 @patch.object(GitShortcuts, "local_branch_names", return_value=[])
-def test_git_kickoff_with_yes(
+def test_git_kick_with_yes(
     _branches: MagicMock,
-    mock_kickoff: MagicMock,
+    mock_kick: MagicMock,
     snapshot: MagicMock,
 ) -> None:
     with patch(SNAPSHOT, return_value=snapshot):
-        result = runner.invoke(app, ["git", "kickoff", "issue-9-docker", "--yes"])
+        result = runner.invoke(app, ["git", "kick", "issue-9-docker", "--yes"])
     assert result.exit_code == 0
-    assert "kickoff" in result.stdout
-    mock_kickoff.assert_called_once_with("issue-9-docker", yes=True, keep_ignored=False)
+    assert "kick" in result.stdout
+    mock_kick.assert_called_once_with("issue-9-docker", yes=True, keep_ignored=False)
 
 
 @patch.object(GitShortcuts, "land", return_value=["feat-a"])

@@ -67,7 +67,7 @@ CURSOR_SKILLS_GIT_SCRIPTS = [
     "scripts/git/push.sh",
     "scripts/git/ship.sh",
     "scripts/git/prep.sh",
-    "scripts/git/kickoff.sh",
+    "scripts/git/kick.sh",
     "scripts/git/land.sh",
     "scripts/git/rebase.sh",
     "scripts/git/reset.sh",

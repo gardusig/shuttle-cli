@@ -352,7 +352,7 @@ GIT_PUBLIC_COMMANDS = (
     "push",
     "ship",
     "prep",
-    "kickoff",
+    "kick",
     "land",
     "start",
     "stash",

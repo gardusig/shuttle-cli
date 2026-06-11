@@ -22,7 +22,7 @@ shuttle git --help
 | Task | Command |
 | --- | --- |
 | **Before work** (clean main) | `shuttle git prep` |
-| **Start issue** (prep + branch) | `shuttle git kickoff issue-9-slug` |
+| **Start issue** (prep + branch) | `shuttle git kick issue-9-slug` |
 | **During work** (add + commit + push) | `shuttle git ship` |
 | **After merge** (main + prune branches) | `shuttle git land --yes` |
 | Start branch (no prep) | `shuttle git start [name]` |

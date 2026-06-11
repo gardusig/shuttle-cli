@@ -9,7 +9,7 @@ Shuttle favors **suggested values** over prompts so common flows are one command
 | `shuttle git push` | Commit message `.` if dirty | `shuttle git push --yes` |
 | `shuttle git ship` | Add + commit + push with branch summary gate | `shuttle git ship --yes` |
 | `shuttle git prep` | Align main (fetch, reset, clean) | `shuttle git prep --yes` |
-| `shuttle git kickoff` | Prep + new branch (`wip-YYMMDD-NNN` or your slug) | `shuttle git kickoff issue-9-docker --yes` |
+| `shuttle git kick` | Prep + new branch (`wip-YYMMDD-NNN` or your slug) | `shuttle git kick issue-9-docker --yes` |
 | `shuttle git land` | After merge: main + delete merged branches | `shuttle git land --yes` |
 | `shuttle git stash push` | Message `.` | `shuttle git stash push` |
 | `shuttle git tag` | Name `YYYY-MM-DD` (today) | `shuttle git tag` |

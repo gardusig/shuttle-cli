@@ -157,8 +157,8 @@ def prep_cmd(
     rprint("[green]prep complete[/green] — on main, synced with remote")
 
 
-@git_app.command("kickoff")
-def kickoff_cmd(
+@git_app.command("kick")
+def kick_cmd(
     branch: str | None = typer.Argument(
         None,
         help="Branch name (default wip-YYMMDD-NNN; use issue slug e.g. issue-9-docker).",
@@ -175,13 +175,13 @@ def kickoff_cmd(
         *_prep_intent_lines(svc, keep_ignored=keep_ignored),
     ]
     _write_gate(
-        "kickoff",
+        "kick",
         yes=yes,
         question=f"Prep main and start branch {branch_name!r}?",
         extra_lines=extra,
     )
-    name = svc.kickoff(branch_name, yes=True, keep_ignored=keep_ignored)
-    rprint(f"[green]kickoff[/green] on branch {name}")
+    name = svc.kick(branch_name, yes=True, keep_ignored=keep_ignored)
+    rprint(f"[green]kick[/green] on branch {name}")
 
 
 def _land_intent_lines(svc: GitShortcuts, *, all_local: bool) -> list[str]:

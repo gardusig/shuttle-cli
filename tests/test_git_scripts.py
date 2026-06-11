@@ -22,7 +22,7 @@ def test_all_cursor_skills_git_scripts_exist() -> None:
         "push.sh",
         "ship.sh",
         "prep.sh",
-        "kickoff.sh",
+        "kick.sh",
         "land.sh",
         "rebase.sh",
         "reset.sh",

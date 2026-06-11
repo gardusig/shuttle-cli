@@ -214,7 +214,7 @@ class GitShortcuts:
         """Checkout main, fetch, reset to canonical main, clean (-fdx by default)."""
         self.align_main(yes=yes, keep_ignored=keep_ignored)
 
-    def kickoff(
+    def kick(
         self,
         branch: str | None = None,
         *,

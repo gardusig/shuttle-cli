@@ -19,7 +19,7 @@ def test_git_help() -> None:
         "push",
         "ship",
         "prep",
-        "kickoff",
+        "kick",
         "land",
         "pull",
         "start",
