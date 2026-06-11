@@ -14,6 +14,11 @@ python -m shuttle drives | grep -q "drives: not implemented yet"
 python -m shuttle notion | grep -q "notion: not implemented yet"
 python -m shuttle bookmarks | grep -q "scripts/chrome/export-bookmarks.sh"
 
+links_out="$(mktemp)"
+python -m shuttle links >"$links_out" 2>&1
+grep -q "Quick defaults" "$links_out"
+rm -f "$links_out"
+
 bash -n scripts/bootstrap.sh scripts/install.sh
 bash -n scripts/chrome/*.sh
 bash -n scripts/git/*.sh
@@ -54,5 +59,7 @@ git -C "$tmpdir/repo" commit -m "initial" >/dev/null
   python -m shuttle git start smoke-branch | grep -q "smoke-branch"
   test "$(git branch --show-current)" = "smoke-branch"
 )
+
+python scripts/integration/check_public_endpoints.py
 
 echo "Docker integration smoke passed."

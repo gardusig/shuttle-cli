@@ -27,6 +27,7 @@ def test_all_cursor_skills_git_scripts_exist() -> None:
         "start.sh",
         "stash.sh",
         "tag.sh",
+        "zip.sh",
     }
     found = {p.name for p in GIT_SCRIPTS.glob("*.sh") if p.name != "_common.sh"}
     assert found == expected

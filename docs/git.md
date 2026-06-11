@@ -25,6 +25,7 @@ Each command maps to a [cursor-skills git skill](https://github.com/gardusig/cur
 | `@git-start` | `scripts/git/start.sh` | `shuttle git start` |
 | `@git-stash` | `scripts/git/stash.sh` | `shuttle git stash` |
 | `@git-tag` | `scripts/git/tag.sh` | `shuttle git tag` |
+| `@git-zip` | `scripts/git/zip.sh` | `shuttle git zip` |
 
 ## Internal read/write
 
@@ -94,6 +95,22 @@ Non-interactive full wipe:
 ```bash
 shuttle git branch-clear --yes --delete-remote
 ```
+
+## Tag and zip
+
+```bash
+shuttle git tag                    # annotated tag YYYY-MM-DD on HEAD
+shuttle git tag --push --yes       # non-interactive push
+shuttle git zip                    # zip today's tag → data/backups/YYYY-MM-DD.zip
+shuttle git zip 2026-06-11 -o out.zip
+```
+
+Interactive `tag` flow:
+
+1. Default name is **today's date** (`YYYY-MM-DD`).
+2. If the tag exists **locally** → prompt to replace (write gate).
+3. If `origin` exists → prompt to **push** (default no).
+4. If the tag exists on **origin** and you push → prompt to **force-push**.
 
 ## Review (workspace health)
 

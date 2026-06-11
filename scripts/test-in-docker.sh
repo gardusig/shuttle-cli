@@ -12,7 +12,16 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 127
 fi
 
-docker build -t "$IMAGE" "$ROOT"
+if [[ "${SHUTTLE_DOCKER_SKIP_BUILD:-0}" != "1" ]]; then
+  echo "Building image: $IMAGE"
+  docker build -t "$IMAGE" "$ROOT"
+else
+  echo "Using pre-built image: $IMAGE"
+  if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+    echo "ERROR: SHUTTLE_DOCKER_SKIP_BUILD=1 but image not found: $IMAGE" >&2
+    exit 1
+  fi
+fi
 
 docker run --rm \
   -v "$ROOT:$CONTAINER_SRC:ro" \

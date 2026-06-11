@@ -18,6 +18,7 @@ READ_OPERATIONS = frozenset(
         "branch-list",
         "stash-list",
         "large-files",
+        "zip",
         "review",
         "docs",
         "pull",

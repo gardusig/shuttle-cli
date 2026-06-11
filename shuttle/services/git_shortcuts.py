@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import time
 import os
+import time
 from pathlib import Path
 
 from shuttle.utils.process import GitCommandError, run_git
+from shuttle.utils.quick_defaults import default_tag_name
 
 
 class GitShortcuts:
@@ -335,42 +336,50 @@ class GitShortcuts:
             return
         run_git(["cherry-pick", "--no-edit", sha], cwd=self.top)
 
-    def tag(
-        self,
-        name: str | None = None,
-        *,
-        push: bool = False,
-        replace_local: bool = False,
-        force_push: bool = False,
-        yes: bool = False,
-    ) -> str:
-        from datetime import date
-
-        tag_name = name or date.today().isoformat()
-        if push and not yes:
-            raise RuntimeError("Pass --yes to push tag to remote.")
-        if force_push and not yes:
-            raise RuntimeError("Pass --yes to force-push tag.")
-        if replace_local and not yes:
-            raise RuntimeError("Pass --yes to replace local tag.")
-        if yes:
-            self.align_main(yes=True)
-        target = "HEAD"
-        exists = run_git(
-            ["rev-parse", "-q", "--verify", f"refs/tags/{tag_name}"],
+    def tag_exists_local(self, name: str) -> bool:
+        result = run_git(
+            ["rev-parse", "-q", "--verify", f"refs/tags/{name}"],
             cwd=self.top,
             check=False,
-        ).returncode == 0
-        if exists and replace_local:
-            run_git(["tag", "-fa", tag_name, target, "-m", tag_name], cwd=self.top)
-        elif not exists:
-            run_git(["tag", "-a", tag_name, target, "-m", tag_name], cwd=self.top)
-        if push and self.remote_exists("origin"):
-            if force_push:
-                run_git(["push", "--force", "origin", f"refs/tags/{tag_name}"], cwd=self.top)
-            else:
-                run_git(["push", "origin", f"refs/tags/{tag_name}"], cwd=self.top)
-        return tag_name
+        )
+        return result.returncode == 0
+
+    def tag_exists_remote(self, name: str, remote: str = "origin") -> bool:
+        if not self.remote_exists(remote):
+            return False
+        result = run_git(
+            ["ls-remote", "--tags", remote, f"refs/tags/{name}"],
+            cwd=self.top,
+            check=False,
+        )
+        return bool(result.stdout.strip())
+
+    def create_tag(self, name: str, *, replace: bool = False) -> None:
+        if self.tag_exists_local(name):
+            if not replace:
+                raise RuntimeError(
+                    f"Tag {name} already exists locally. Pass replace=True to overwrite."
+                )
+            run_git(["tag", "-fa", name, "HEAD", "-m", name], cwd=self.top)
+        else:
+            run_git(["tag", "-a", name, "HEAD", "-m", name], cwd=self.top)
+
+    def push_tag(self, name: str, *, force: bool = False, remote: str = "origin") -> None:
+        if not self.remote_exists(remote):
+            raise RuntimeError(f"Remote {remote} is not configured.")
+        if force:
+            run_git(["push", "--force", remote, f"refs/tags/{name}"], cwd=self.top)
+        else:
+            run_git(["push", remote, f"refs/tags/{name}"], cwd=self.top)
+
+    def zip_tag(self, tag: str, output: Path) -> Path:
+        run_git(["rev-parse", "-q", "--verify", f"refs/tags/{tag}"], cwd=self.top)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        run_git(
+            ["archive", "--format=zip", f"--output={output}", tag],
+            cwd=self.top,
+        )
+        return output
 
     def large_files(self, top_n: int = 20, *, worktree: bool = False) -> list[tuple[int, str]]:
         root = Path(self.top)

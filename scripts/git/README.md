@@ -23,6 +23,7 @@ Shell wrappers for each [cursor-skills git skill](https://github.com/gardusig/cu
 | `start.sh` | `git/start` | `shuttle git start` |
 | `stash.sh` | `git/stash` | `shuttle git stash` |
 | `tag.sh` | `git/tag` | `shuttle git tag` |
+| `zip.sh` | `git/zip` | `shuttle git zip` |
 
 Usage:
 

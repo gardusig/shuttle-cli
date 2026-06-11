@@ -28,7 +28,7 @@ shuttle git --help
 | Align `main` | `shuttle git main --yes` |
 | Delete merged branch | `shuttle git branch-delete BRANCH --yes` |
 | Clear all branches (keep `main`) | `shuttle git branch-clear --yes` |
-| Tag release | `shuttle git tag --push --yes` |
+| Tag release | `shuttle git tag` (today's date) · `shuttle git zip TAG` |
 
 Short alias: `shuttle g push --yes` == `shuttle git push --yes`.
 
@@ -53,7 +53,7 @@ Run CLI and shell smoke checks in a disposable container copy:
 ./scripts/test-in-docker.sh
 ```
 
-See [docs/docker.md](docs/docker.md).
+CI runs **unit** (macOS pytest) and **integration** (Docker) on every pull request. See [docs/docker.md](docs/docker.md).
 
 ## Docs
 

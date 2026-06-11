@@ -18,6 +18,7 @@ def test_docker_harness_files_exist() -> None:
         ".dockerignore",
         "scripts/test-in-docker.sh",
         "scripts/integration/smoke.sh",
+        "scripts/integration/check_public_endpoints.py",
     ):
         path = ROOT / rel
         assert path.exists(), f"missing {rel}"
@@ -30,14 +31,34 @@ def test_docker_harness_mentions_readonly_mount() -> None:
     assert "/tmp/shuttle-cli" in runner
     assert "--exclude='.git'" in runner
     assert "--exclude='.venv'" in runner
+    assert "SHUTTLE_DOCKER_SKIP_BUILD" in runner
 
 
-def test_docker_smoke_uses_isolated_bookmark_paths() -> None:
+def test_ci_workflow_runs_on_pull_request_with_both_jobs() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "test.yml").read_text()
+    assert "pull_request:" in workflow
+    assert "unit:" in workflow or "name: Unit tests" in workflow
+    assert "integration:" in workflow or "name: Integration tests" in workflow
+    assert "test-in-docker.sh" in workflow
+    assert "pytest" in workflow
+
+
+def test_docker_smoke_runs_public_endpoint_checker() -> None:
     smoke = (ROOT / "scripts" / "integration" / "smoke.sh").read_text()
-    assert "mktemp -d" in smoke
+    assert "check_public_endpoints.py" in smoke
     assert "SHUTTLE_SKIP_CHROME_AUTOMATION=1" in smoke
-    assert "SHUTTLE_DOWNLOADS_DIR" in smoke
-    assert "python -m shuttle git start smoke-branch" in smoke
+
+
+def test_public_endpoint_registry_covers_all_git_commands() -> None:
+    from shuttle.integration.public_endpoints import (
+        assert_every_git_subcommand_checked,
+        assert_every_top_level_command_checked,
+        assert_registry_covers_git_commands,
+    )
+
+    assert_registry_covers_git_commands()
+    assert_every_git_subcommand_checked()
+    assert_every_top_level_command_checked()
 
 
 @pytest.mark.integration

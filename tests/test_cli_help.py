@@ -22,6 +22,7 @@ def test_git_help() -> None:
         "main",
         "branch-delete",
         "tag",
+        "zip",
         "large-files",
         "review",
         "docs",
