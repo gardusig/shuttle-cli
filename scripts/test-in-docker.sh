@@ -40,12 +40,11 @@ docker run --rm \
     cd '$CONTAINER_WORK'
     ./scripts/bootstrap.sh
     source .venv/bin/activate
-    unset GIT_DIR GIT_WORK_TREE
-    git -C '$CONTAINER_WORK' init -b main
-    git -C '$CONTAINER_WORK' config user.email 'shuttle@example.test'
-    git -C '$CONTAINER_WORK' config user.name 'Shuttle Test'
-    git -C '$CONTAINER_WORK' add -A
-    git -C '$CONTAINER_WORK' commit -m 'docker integration snapshot'
+    git config --global user.email 'shuttle@example.test'
+    git config --global user.name 'Shuttle Test'
+    env -u GIT_DIR -u GIT_WORK_TREE git -C '$CONTAINER_WORK' init -b main
+    env -u GIT_DIR -u GIT_WORK_TREE git -C '$CONTAINER_WORK' add -A
+    env -u GIT_DIR -u GIT_WORK_TREE git -C '$CONTAINER_WORK' commit -m 'docker integration snapshot'
     pytest -q
     ./scripts/integration/smoke.sh
   "
