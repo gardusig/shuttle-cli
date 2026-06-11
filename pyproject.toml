@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shuttle-cli"
+version = "0.1.0"
+description = "macOS CLI for git shortcuts, backups, and sync workflows"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "gardusig" }]
+dependencies = [
+  "typer>=0.12",
+  "pydantic>=2.0",
+  "pydantic-settings>=2.0",
+  "PyYAML>=6.0",
+  "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+]
+
+[project.scripts]
+shuttle = "shuttle.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["shuttle*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

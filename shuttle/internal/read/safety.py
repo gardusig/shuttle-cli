@@ -1,0 +1,76 @@
+"""Read-only safety policy: which operations need a write gate."""
+
+from __future__ import annotations
+
+from enum import Enum
+
+
+class OperationKind(Enum):
+    READ = "read"
+    WRITE_SAFE = "write_safe"
+    WRITE_GATED = "write_gated"
+
+
+# Read-only or low-risk local writes (no gate).
+READ_OPERATIONS = frozenset(
+    {
+        "status",
+        "branch-list",
+        "stash-list",
+        "large-files",
+        "review",
+        "docs",
+        "pull",
+    }
+)
+
+WRITE_SAFE_OPERATIONS = frozenset(
+    {
+        "commit",
+        "start",
+        "stash-push",
+        "stash-apply",
+        "stash-pop",
+        "branch-rename",
+        "branch-prune",
+        "rebase-continue",
+        "rebase-abort",
+        "revert-continue",
+        "revert-abort",
+        "cherry-pick-continue",
+        "cherry-pick-abort",
+    }
+)
+
+# Destructive or remote-publishing — require write gate + confirmation.
+WRITE_GATED_OPERATIONS = frozenset(
+    {
+        "push",
+        "main",
+        "reset",
+        "branch-delete",
+        "branch-delete-all",
+        "branch-delete-action",
+        "post-merge-cleanup",
+        "stash-drop",
+        "stash-clear",
+        "tag-push",
+        "tag-replace",
+        "tag-force-push",
+        "start-align-main",
+        "start-push",
+        "rebase",
+        "revert",
+        "cherry-pick",
+    }
+)
+
+
+def classify_operation(operation: str) -> OperationKind:
+    if operation in READ_OPERATIONS:
+        return OperationKind.READ
+    if operation in WRITE_SAFE_OPERATIONS:
+        return OperationKind.WRITE_SAFE
+    if operation in WRITE_GATED_OPERATIONS:
+        return OperationKind.WRITE_GATED
+    return OperationKind.WRITE_GATED
