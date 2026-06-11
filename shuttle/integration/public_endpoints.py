@@ -457,6 +457,11 @@ def ensure_project_git(repo_root: Path) -> None:
         return
     env = _git_env()
     git = ["git", "-C", str(repo_root)]
+    subprocess.run(
+        ["git", "config", "--global", "--add", "safe.directory", str(repo_root.resolve())],
+        check=True,
+        env=env,
+    )
     subprocess.run([*git, "init", "-b", "main"], check=True, capture_output=True, env=env)
     subprocess.run([*git, "config", "user.email", "shuttle@example.test"], check=True, env=env)
     subprocess.run([*git, "config", "user.name", "Shuttle Test"], check=True, env=env)

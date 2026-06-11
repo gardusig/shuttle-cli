@@ -42,6 +42,7 @@ docker run --rm \
     source .venv/bin/activate
     git config --global user.email 'shuttle@example.test'
     git config --global user.name 'Shuttle Test'
+    git config --global --add safe.directory '*'
     env -u GIT_DIR -u GIT_WORK_TREE git -C '$CONTAINER_WORK' init -b main
     env -u GIT_DIR -u GIT_WORK_TREE git -C '$CONTAINER_WORK' add -A
     env -u GIT_DIR -u GIT_WORK_TREE git -C '$CONTAINER_WORK' commit -m 'docker integration snapshot'
