@@ -79,7 +79,7 @@ shuttle drive --help
 
 Do not run `pytest` on the host; use `./scripts/test-unit.sh` and `./scripts/test-integration.sh` instead.
 
-## Git (`shuttle git`)
+## Common git commands
 
 Run from inside a repository (`cd` into the repo first).
 
@@ -100,7 +100,7 @@ Short alias: `shuttle g push --yes` == `shuttle git push --yes`.
 
 Shell wrappers: `scripts/git/` (e.g. `./scripts/git/review.sh`). See [docs/git.md](docs/git.md).
 
-**Safety:** destructive git actions require `--yes` or interactive confirmation.
+**Safety:** destructive actions (reset, clean, delete, push) require `--yes` or an interactive confirmation. Default `shuttle git start` aligns main then branches; pass `--no-prep` to branch from the current state.
 
 ## Drive (`shuttle drive`)
 

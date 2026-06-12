@@ -93,6 +93,16 @@ DOCKER_VERIFY_PATHS = [
     ".github/workflows/test.yml",
 ]
 
+DOCKER_VERIFY_PATHS = [
+    "Dockerfile",
+    "scripts/docker/common.sh",
+    "scripts/docker/run-unit.sh",
+    "scripts/docker/run-integration.sh",
+    "scripts/test-unit.sh",
+    "scripts/test-integration.sh",
+    ".github/workflows/test.yml",
+]
+
 REQUIRED_PATHS = [
     "config/config.yaml",
     "config/drives.yaml",

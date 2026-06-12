@@ -52,7 +52,7 @@ Same scripts as GitHub Actions. See [docker.md](docker.md).
 2. Optional: edit `config/config.yaml` → `backup.repositories` for `shuttle drive status` / `drive ingest`.
 3. Chrome `bookmarks deploy` (local → browser) needs a prior `bookmarks ingest` into `data/bookmarks/bookmarks.html`.
 
-See [configuration.md](configuration.md) and README **First-time setup**.
+See [configuration.md](configuration.md) and README **Configuration**.
 
 ## Troubleshooting
 
