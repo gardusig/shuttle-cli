@@ -417,8 +417,11 @@ class GitShortcuts:
                 "Working tree is dirty. Pass --yes to align main and tag, "
                 "or run `shuttle git reset --yes` first."
             )
-        if yes:
-            self._prepare_leave_branch(message=".", discard=False)
+        if yes and self.is_dirty():
+            if self.current_branch() == "main":
+                self.commit(".")
+            else:
+                self._prepare_leave_branch(message=".", discard=False)
         self.sync_main(yes=yes, keep_ignored=False)
         if self.current_branch() != "main":
             raise RuntimeError("Expected to be on main after sync.")

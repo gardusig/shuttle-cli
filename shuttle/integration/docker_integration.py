@@ -204,7 +204,8 @@ def run_live_docker_checks(repo_root: Path) -> list[str]:
             DockerCheck(
                 "live docker stats",
                 ("docker", "stats", "--by", "memory", "--top", "500"),
-                needle=_LIVE_CONTAINER,
+                # Rich table truncates long names (…); prefix still identifies our container.
+                needle="shuttle-cli-integration",
             ),
             DockerCheck(
                 "live docker containers",
