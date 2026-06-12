@@ -141,6 +141,23 @@ shuttle git review
 
 Runs shell syntax checks; without `--quick`, also `./scripts/test-unit.sh` (Docker — requires Docker Desktop). No commit or push. Use `shuttle git review --quick` when Docker is unavailable.
 
+## Read-only introspection (cursor-skills)
+
+Used by [`read-shuttle-git`](https://github.com/gardusig/cursor-skills/blob/main/skills/internal/read/shuttle/git/SKILL.md) — no write gate:
+
+```bash
+shuttle git branch-current
+shuttle git diff-stat --base upstream/main
+shuttle git diff-names --base "$BASE_GIT"
+shuttle git log-oneline --base "$BASE_GIT"
+shuttle git log-messages --base "$BASE_GIT" --max-count 30
+shuttle git rev-list-count --base "$BASE_GIT"
+shuttle git remote-url upstream
+shuttle git rev-parse HEAD
+shuttle git merge-base-check --base "$BASE_GIT"
+shuttle git publish-check --remote origin --branch feature-x
+```
+
 ## Docs inventory
 
 ```bash

@@ -8,6 +8,7 @@ from shuttle.commands.bookmarks import bookmarks_app
 from shuttle.commands.chrome import chrome_app
 from shuttle.commands.docker import docker_app
 from shuttle.commands.drive import drive_app
+from shuttle.commands.gh import gh_app
 from shuttle.commands.git import git_app
 from shuttle.commands.links import links_app
 from shuttle.commands.notion import notion_app
@@ -22,6 +23,7 @@ app = typer.Typer(
 
 app.add_typer(links_app, name="links")
 app.add_typer(git_app, name="git")
+app.add_typer(gh_app, name="gh")
 app.add_typer(backup_app, name="backup", hidden=True)
 app.add_typer(restore_app, name="restore")
 app.add_typer(drive_app, name="drive")

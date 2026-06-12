@@ -563,3 +563,48 @@ class GitShortcuts:
                         pass
         files.sort(reverse=True)
         return [(size, str(path.relative_to(root))) for size, path in files[:top_n]]
+
+    def diff_stat(self, base: str, head: str = "HEAD") -> str:
+        return run_git(["diff", "--stat", f"{base}...{head}"], cwd=self.top).stdout
+
+    def diff_name_status(self, base: str, head: str = "HEAD") -> str:
+        return run_git(["diff", "--name-status", f"{base}...{head}"], cwd=self.top).stdout
+
+    def log_oneline(self, base: str, head: str = "HEAD", *, max_count: int | None = None) -> str:
+        args = ["log", "--oneline", f"{base}..{head}"]
+        if max_count is not None:
+            args.extend(["-n", str(max_count)])
+        return run_git(args, cwd=self.top).stdout
+
+    def log_messages(self, base: str, head: str = "HEAD", *, max_count: int | None = None) -> str:
+        args = ["log", "--pretty=format:---%n%s%n%n%b", f"{base}..{head}"]
+        if max_count is not None:
+            args.extend(["-n", str(max_count)])
+        return run_git(args, cwd=self.top).stdout
+
+    def rev_list_count(self, base: str, head: str = "HEAD") -> tuple[int, int]:
+        out = run_git(
+            ["rev-list", "--left-right", "--count", f"{base}...{head}"],
+            cwd=self.top,
+        ).stdout.strip()
+        left, right = out.split()
+        return int(left), int(right)
+
+    def remote_url(self, name: str) -> str:
+        return run_git(["remote", "get-url", name], cwd=self.top).stdout.strip()
+
+    def rev_parse(self, ref: str) -> str:
+        return run_git(["rev-parse", ref], cwd=self.top).stdout.strip()
+
+    def merge_base_is_ancestor(self, base: str, head: str = "HEAD") -> bool:
+        result = run_git(
+            ["merge-base", "--is-ancestor", base, head],
+            cwd=self.top,
+            check=False,
+        )
+        return result.returncode == 0
+
+    def commit_on_remote_branch(self, remote: str, branch: str, commit: str) -> bool:
+        ref = f"refs/remotes/{remote}/{branch}"
+        result = run_git(["merge-base", "--is-ancestor", commit, ref], cwd=self.top, check=False)
+        return result.returncode == 0

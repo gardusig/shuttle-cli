@@ -70,6 +70,20 @@ WRITE_GATED_OPERATIONS = frozenset(
         "docker-container-delete",
         "docker-image-delete",
         "docker-reset",
+        "gh-issue-create",
+        "gh-issue-edit",
+        "gh-issue-close",
+        "gh-issue-delete",
+        "gh-issue-comment",
+        "gh-issue-batch",
+        "gh-label-create",
+        "gh-label-delete",
+        "gh-label-sync",
+        "gh-pr-create",
+        "gh-pr-edit",
+        "gh-pr-close",
+        "gh-pr-merge",
+        "gh-backlog-resequence",
     }
 )
 
