@@ -105,6 +105,8 @@ DOCKER_VERIFY_PATHS = [
 
 REQUIRED_PATHS = [
     "config/config.yaml",
+    "config/ci/config.yaml",
+    "config/ci/drives.yaml",
     "config/drives.yaml",
     "data/backups/.gitkeep",
     "data/notion/.gitkeep",

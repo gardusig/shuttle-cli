@@ -11,7 +11,7 @@ python -m shuttle --version | grep -q "0.1.0"
 python -m shuttle drive status | grep -q "Repository:"
 python -m shuttle restore | grep -q "restore: not implemented yet"
 python -m shuttle drive --help | grep -q "upload"
-python -m shuttle notion | grep -q "notion: not implemented yet"
+python -m shuttle notion --help | grep -q "ingest"
 python -m shuttle chrome --help | grep -q "bookmarks"
 python -m shuttle notion --help | grep -q "export"
 

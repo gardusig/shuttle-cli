@@ -1,0 +1,15 @@
+# Docker CI / test harness: paths relative to the copied workdir (git repo at ".").
+backup:
+  tags_dir: data/backups/ci-tags
+  repositories:
+    - path: .
+
+notion:
+  database_id: ci-test-database
+  task_directory: data/tasks
+  cleanup_before_deploy: false
+
+chrome:
+  profile: Default
+  bookmarks_file: data/bookmarks/bookmarks.html
+  downloads_dir: /tmp/Downloads

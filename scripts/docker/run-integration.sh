@@ -3,6 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
+export SHUTTLE_CONFIG_DIR="$ROOT/config/ci"
 SHUTTLE_BOOTSTRAP_DEV=1 ./scripts/bootstrap.sh
 source .venv/bin/activate
 pytest -q

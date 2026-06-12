@@ -1,0 +1,10 @@
+drives:
+  google:
+    enabled: true
+    root: git-tags
+  onedrive:
+    enabled: true
+    root: git-tags
+  proton:
+    enabled: true
+    root: git-tags
