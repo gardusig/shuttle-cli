@@ -417,12 +417,30 @@ def test_prepare_for_tag_calls_sync_main(mock_run: MagicMock, svc: GitShortcuts)
     mock_run.return_value = _ok("abc123\n")
     with (
         patch.object(svc, "is_dirty", return_value=False),
+        patch.object(svc, "_prepare_leave_branch") as mock_prepare,
         patch.object(svc, "sync_main") as mock_sync,
         patch.object(svc, "current_branch", return_value="main"),
         patch.object(svc, "head_sha", return_value="abc123"),
         patch.object(svc, "main_tip_sha", return_value="abc123"),
     ):
         svc.prepare_for_tag(yes=True)
+    mock_prepare.assert_called_once_with(message=".", discard=False)
+    mock_sync.assert_called_once_with(yes=True, keep_ignored=False)
+
+
+@patch(PATCH)
+def test_prepare_for_tag_commits_dirty_work_before_sync(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    mock_run.return_value = _ok("abc123\n")
+    with (
+        patch.object(svc, "is_dirty", return_value=True),
+        patch.object(svc, "_prepare_leave_branch") as mock_prepare,
+        patch.object(svc, "sync_main") as mock_sync,
+        patch.object(svc, "current_branch", return_value="main"),
+        patch.object(svc, "head_sha", return_value="abc123"),
+        patch.object(svc, "main_tip_sha", return_value="abc123"),
+    ):
+        svc.prepare_for_tag(yes=True)
+    mock_prepare.assert_called_once_with(message=".", discard=False)
     mock_sync.assert_called_once_with(yes=True, keep_ignored=False)
 
 

@@ -200,9 +200,17 @@ def run_live_docker_checks(repo_root: Path) -> list[str]:
     subprocess.run(["docker", "pull", "-q", "alpine"], capture_output=True)
     try:
         live_checks = [
-            DockerCheck("live docker ps", ("docker", "ps"), needle=_LIVE_CONTAINER),
-            DockerCheck("live docker stats", ("docker", "stats", "--by", "memory"), needle="shuttle-cli-integration"),
-            DockerCheck("live docker containers", ("docker", "containers", "--top", "5"), needle=_LIVE_CONTAINER),
+            DockerCheck("live docker ps", ("docker", "ps", "--top", "500"), needle=_LIVE_CONTAINER),
+            DockerCheck(
+                "live docker stats",
+                ("docker", "stats", "--by", "memory", "--top", "500"),
+                needle=_LIVE_CONTAINER,
+            ),
+            DockerCheck(
+                "live docker containers",
+                ("docker", "containers", "--top", "500"),
+                needle=_LIVE_CONTAINER,
+            ),
             DockerCheck("live docker images", ("docker", "images", "--top", "100"), needle="alpine"),
             DockerCheck("live docker top", ("docker", "top", "-n", "3"), needle="CPU"),
             DockerCheck("live docker df", ("docker", "df"), needle="Images"),

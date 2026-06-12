@@ -51,3 +51,26 @@ def test_legacy_bookmarks_export_alias_calls_ingest() -> None:
             result = runner.invoke(app, ["bookmarks", "export"])
     assert result.exit_code == 0
     assert "ingested" in result.stdout
+
+
+@patch("shuttle.commands.chrome.subprocess.run")
+@patch("shuttle.commands.chrome.bookmarks_file_path")
+def test_chrome_legacy_export_alias_calls_ingest(mock_path: MagicMock, mock_run: MagicMock, tmp_path: Path) -> None:
+    dest = tmp_path / "bookmarks.html"
+    mock_path.return_value = dest
+    mock_run.return_value = MagicMock(returncode=0)
+    result = runner.invoke(app, ["chrome", "bookmarks", "export"])
+    assert result.exit_code == 0
+    assert "ingested" in result.stdout
+
+
+@patch("shuttle.commands.chrome.subprocess.run")
+@patch("shuttle.commands.chrome.bookmarks_file_path")
+def test_chrome_legacy_import_alias_calls_deploy(mock_path: MagicMock, mock_run: MagicMock, tmp_path: Path) -> None:
+    src = tmp_path / "bookmarks.html"
+    src.write_text("<html></html>", encoding="utf-8")
+    mock_path.return_value = src
+    mock_run.return_value = MagicMock(returncode=0)
+    result = runner.invoke(app, ["chrome", "bookmarks", "import"])
+    assert result.exit_code == 0
+    assert "deployed" in result.stdout

@@ -64,14 +64,14 @@ def bookmarks_deploy_cmd() -> None:
 
 @bookmarks_app.command("import", hidden=True)
 def legacy_import_cmd() -> None:
-    """Deprecated: use `shuttle chrome bookmarks ingest`."""
-    bookmarks_ingest_from_chrome()
+    """Deprecated: remote-centric local→Chrome; use `shuttle chrome bookmarks deploy`."""
+    bookmarks_deploy_to_chrome()
 
 
 @bookmarks_app.command("export", hidden=True)
 def legacy_export_cmd() -> None:
-    """Deprecated: use `shuttle chrome bookmarks deploy`."""
-    bookmarks_deploy_to_chrome()
+    """Deprecated: remote-centric Chrome→local; use `shuttle chrome bookmarks ingest`."""
+    bookmarks_ingest_from_chrome()
 
 
 chrome_app.add_typer(bookmarks_app, name="bookmarks")

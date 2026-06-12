@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT="${SHUTTLE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 cd "$ROOT"
+export SHUTTLE_CONFIG_DIR="${SHUTTLE_CONFIG_DIR:-$ROOT/config/ci}"
 
 python -m shuttle --help >/dev/null
 python -m shuttle --version | grep -q "0.1.0"

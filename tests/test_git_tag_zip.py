@@ -173,6 +173,43 @@ def test_git_zip_with_tag(
 
 
 @pytest.mark.requires_git
+def test_prepare_for_tag_commits_dirty_feature_work_before_sync() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-b", "main", str(repo)], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(repo), "config", "user.email", "t@t.com"], check=True)
+        subprocess.run(["git", "-C", str(repo), "config", "user.name", "T"], check=True)
+        (repo / "README.md").write_text("main\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", "README.md"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(repo), "commit", "-m", "main"], check=True, capture_output=True)
+        main_sha = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "main"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        subprocess.run(["git", "-C", str(repo), "checkout", "-b", "feature"], check=True, capture_output=True)
+        (repo / "wip.txt").write_text("uncommitted\n", encoding="utf-8")
+
+        svc = GitShortcuts(top=str(repo))
+        svc.prepare_for_tag(yes=True)
+
+        assert svc.current_branch() == "main"
+        assert svc.head_sha() == main_sha
+        feature_tip = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "feature"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        assert subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "-e", f"{feature_tip}:wip.txt"],
+            capture_output=True,
+        ).returncode == 0
+
+
+@pytest.mark.requires_git
 def test_prepare_for_tag_aligns_feature_branch_to_main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp) / "repo"
