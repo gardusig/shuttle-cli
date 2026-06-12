@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# @git-ship — stage all, commit, and push with confirmation
+# @docker-image-delete — prune unused images
 set -euo pipefail
 # shellcheck source=_common.sh
 source "$(dirname "$0")/_common.sh"
-exec_shuttle git ship "$@"
+exec_shuttle docker image-delete "$@"

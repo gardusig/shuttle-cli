@@ -31,6 +31,7 @@ class EndpointCheck:
     args: tuple[str, ...]
     kind: CheckKind = "ok"
     needle: str | None = None
+    extra_needles: tuple[str, ...] = field(default_factory=tuple)
     needs_git: bool = False
     reset_git: bool = False
     dirty_git: bool = False
@@ -45,6 +46,7 @@ class EndpointCheck:
 TOP_LEVEL_COMMANDS = (
     "links",
     "git",
+    "docker",
     "backup",
     "restore",
     "drives",
@@ -58,10 +60,6 @@ GIT_SUBCOMMANDS = (
     "pull",
     "commit",
     "push",
-    "ship",
-    "prep",
-    "kick",
-    "land",
     "start",
     "stash",
     "branch",
@@ -93,6 +91,7 @@ def endpoint_checks() -> list[EndpointCheck]:
         EndpointCheck("notion", ("notion",), needle="not implemented yet"),
         EndpointCheck("bookmarks", ("bookmarks",), needle="export-bookmarks.sh"),
         EndpointCheck("links", ("links",), needle="Quick defaults"),
+        EndpointCheck("docker --help", ("docker", "--help"), needle="reset"),
         EndpointCheck(
             "git group help",
             ("git",),
@@ -172,14 +171,14 @@ def endpoint_checks() -> list[EndpointCheck]:
         ),
         EndpointCheck(
             "git start explicit",
-            ("git", "start", "integration-feature"),
+            ("git", "start", "integration-feature", "--no-prep"),
             needle="integration-feature",
             needs_git=True,
             reset_git=True,
         ),
         EndpointCheck(
             "git start auto",
-            ("git", "start"),
+            ("git", "start", "--no-prep"),
             needle="on branch",
             needs_git=True,
         ),
@@ -196,11 +195,27 @@ def endpoint_checks() -> list[EndpointCheck]:
             needs_git=True,
         ),
         # Write gates — must refuse without --yes in non-interactive mode.
-        EndpointCheck("git push", ("git", "push"), kind="refuse", needle=refuse, needs_git=True),
-        EndpointCheck("git ship", ("git", "ship"), kind="refuse", needle=refuse, needs_git=True),
-        EndpointCheck("git prep", ("git", "prep"), kind="refuse", needle=refuse, needs_git=True),
-        EndpointCheck("git kick", ("git", "kick"), kind="refuse", needle=refuse, needs_git=True),
-        EndpointCheck("git land", ("git", "land"), kind="refuse", needle=refuse, needs_git=True),
+        EndpointCheck(
+            "git push refuse main",
+            ("git", "push"),
+            kind="refuse",
+            needle=refuse,
+            extra_needles=("from_branch: main", "target_branch: wip-"),
+            needs_git=True,
+            reset_git=True,
+            dirty_git=True,
+        ),
+        EndpointCheck(
+            "git push refuse branch",
+            ("git", "push"),
+            kind="refuse",
+            needle=refuse,
+            extra_needles=("intent: git add -A → commit → push origin HEAD",),
+            needs_git=True,
+            feature_branch="checked_out",
+            dirty_git=True,
+        ),
+        EndpointCheck("git start", ("git", "start"), kind="refuse", needle=refuse, needs_git=True),
         EndpointCheck("git main", ("git", "main"), kind="refuse", needle=refuse, needs_git=True),
         EndpointCheck("git reset", ("git", "reset"), kind="refuse", needle=refuse, needs_git=True),
         EndpointCheck(
@@ -269,40 +284,42 @@ def endpoint_checks() -> list[EndpointCheck]:
         ),
         # Gated writes with --yes (remote fetch/push/ls-remote mocked in run_all_endpoint_checks).
         EndpointCheck(
-            "git push yes",
+            "git push yes from main",
             ("git", "push", "--yes"),
             needle="pushed",
+            extra_needles=("from_branch: main", "target_branch: wip-"),
             needs_git=True,
             reset_git=True,
-            feature_branch="checked_out",
+            dirty_git=True,
         ),
         EndpointCheck(
-            "git ship yes",
-            ("git", "ship", "--yes"),
-            needle="shipped",
+            "git push yes from branch",
+            ("git", "push", "--yes"),
+            needle="pushed",
+            extra_needles=("intent: git add -A → commit → push origin HEAD",),
             needs_git=True,
             reset_git=True,
             feature_branch="checked_out",
             dirty_git=True,
         ),
         EndpointCheck(
-            "git prep yes",
-            ("git", "prep", "--yes"),
-            needle="prep complete",
+            "git reset main-only yes",
+            ("git", "reset", "--yes", "--main-only"),
+            needle="reset",
             needs_git=True,
             reset_git=True,
         ),
         EndpointCheck(
-            "git kick yes",
-            ("git", "kick", "integration-kick", "--yes"),
-            needle="kick",
+            "git start yes",
+            ("git", "start", "integration-start", "--yes"),
+            needle="started",
             needs_git=True,
             reset_git=True,
         ),
         EndpointCheck(
-            "git land yes",
-            ("git", "land", "--yes"),
-            needle="landed",
+            "git reset yes",
+            ("git", "reset", "--yes"),
+            needle="reset",
             needs_git=True,
             reset_git=True,
             feature_branch="merged",
@@ -313,14 +330,6 @@ def endpoint_checks() -> list[EndpointCheck]:
             needle="main aligned",
             needs_git=True,
             reset_git=True,
-        ),
-        EndpointCheck(
-            "git reset yes",
-            ("git", "reset", "--yes"),
-            needle="reset complete",
-            needs_git=True,
-            reset_git=True,
-            dirty_git=True,
         ),
         EndpointCheck(
             "git branch-delete yes",
@@ -416,7 +425,7 @@ def endpoint_checks() -> list[EndpointCheck]:
         ),
         EndpointCheck(
             "git start push yes",
-            ("git", "start", "integration-push-branch", "--push", "--yes"),
+            ("git", "start", "integration-push-branch", "--no-prep", "--push", "--yes"),
             needle="integration-push-branch",
             needs_git=True,
             reset_git=True,
@@ -711,6 +720,7 @@ def run_all_endpoint_checks(repo_root: Path, git_root: Path | None = None) -> li
                 if code == 0:
                     errors.append(f"{check.label}: expected refusal, got exit 0\n{output}")
                     continue
-            if check.needle and check.needle not in output:
-                errors.append(f"{check.label}: missing needle {check.needle!r}\n{output}")
+            for needle in (check.needle, *check.extra_needles):
+                if needle and needle not in output:
+                    errors.append(f"{check.label}: missing needle {needle!r}\n{output}")
     return errors

@@ -46,3 +46,5 @@ branch = false
 fail_under = 80
 show_missing = true
 skip_empty = true
+
+# Unit Docker job uses coverage-unit.ini (omits shuttle/integration/*; full suite in integration job).

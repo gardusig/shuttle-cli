@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# @git-prep — align main before work
+# @docker-stop — stop running containers
 set -euo pipefail
 # shellcheck source=_common.sh
 source "$(dirname "$0")/_common.sh"
-exec_shuttle git prep "$@"
+exec_shuttle docker stop "$@"

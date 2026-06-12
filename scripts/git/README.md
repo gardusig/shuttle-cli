@@ -16,10 +16,7 @@ Shell wrappers for each [cursor-skills git skill](https://github.com/gardusig/cu
 | `post-merge-cleanup.sh` | `git/post/merge/cleanup` | `shuttle git post-merge-cleanup` |
 | `pull.sh` | `git/pull` | `shuttle git pull` |
 | `push.sh` | `git/push` | `shuttle git push` |
-| `ship.sh` | `git/ship` | `shuttle git ship` |
-| `prep.sh` | `git/prep` | `shuttle git prep` |
-| `kick.sh` | `git/kick` | `shuttle git kick` |
-| `land.sh` | `git/land` | `shuttle git land` |
+| `reset.sh` | `git/reset` | `shuttle git reset` |
 | `rebase.sh` | `git/rebase` | `shuttle git rebase` |
 | `reset.sh` | `git/reset` | `shuttle git reset` |
 | `revert.sh` | `git/revert` | `shuttle git revert` |
@@ -33,7 +30,10 @@ Usage:
 
 ```bash
 ./scripts/git/commit.sh -m "wip"
-./scripts/git/review.sh
+./scripts/git/review.sh          # shell syntax + Docker unit tests
+./scripts/git/review.sh --quick  # shell syntax only
 ```
 
 Set `SHUTTLE_BIN` to override the shuttle executable.
+
+Verification never runs host `pytest`; `review` delegates to `./scripts/test-unit.sh` in Docker when not `--quick`.

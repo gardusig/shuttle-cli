@@ -18,16 +18,31 @@ class CatalogEntry:
 
 
 QUICK_DEFAULTS = (
-    ("git start", "auto branch wip-YYMMDD-NNN (no name needed)"),
+    ("git start", "issue start: align main + branch (wip-YYMMDD-NNN or issue slug); --no-prep to branch in place"),
     ("git commit", "message defaults to '.'"),
-    ("git push", "commit message '.' if tree is dirty"),
-    ("git ship", "add + commit + push with branch summary gate"),
-    ("git prep", "align main before work (fetch, reset, clean)"),
-    ("git kick", "prep + new branch (issue workflow start)"),
-    ("git land", "after merge: main + delete merged branches"),
+    ("git push", "add + commit + push; on main starts random branch — use --yes -y to skip prompt"),
+    ("git reset", "return to synced main + prune merged branches; --main-only for main sync only — --yes"),
     ("git stash push", "message defaults to '.'"),
     ("git tag", "name defaults to today's date (YYYY-MM-DD)"),
 )
+
+# Lifecycle shortcuts: command → shell wrapper + doc (see docs/workflows.md).
+WORKFLOW_SHORTCUTS: tuple[tuple[str, str, str, str], ...] = (
+    ("git reset", "reset.sh", "docs/workflows.md", "return to synced main + prune branches"),
+    ("git start", "start.sh", "docs/workflows.md", "issue start: align main + named branch"),
+    ("git push", "push.sh", "docs/workflows.md", "push current branch; start on main"),
+)
+
+WORKFLOW_CHAIN = "reset → start → push → (merge PR) → reset"
+
+QUICK_DEFAULT_SCRIPTS: dict[str, str] = {
+    "git start": "scripts/git/start.sh",
+    "git commit": "scripts/git/commit.sh",
+    "git push": "scripts/git/push.sh",
+    "git reset": "scripts/git/reset.sh",
+    "git stash push": "scripts/git/stash.sh",
+    "git tag": "scripts/git/tag.sh",
+}
 
 
 GIT_SCRIPT_COMMANDS: tuple[tuple[str, str], ...] = (
@@ -43,10 +58,6 @@ GIT_SCRIPT_COMMANDS: tuple[tuple[str, str], ...] = (
     ("post-merge-cleanup.sh", "git post-merge-cleanup"),
     ("pull.sh", "git pull"),
     ("push.sh", "git push"),
-    ("ship.sh", "git ship"),
-    ("prep.sh", "git prep"),
-    ("kick.sh", "git kick"),
-    ("land.sh", "git land"),
     ("rebase.sh", "git rebase"),
     ("reset.sh", "git reset"),
     ("revert.sh", "git revert"),
@@ -71,7 +82,33 @@ TOP_LEVEL_COMMANDS: tuple[tuple[str, str], ...] = (
     ("notion", "Notion sync (placeholder)"),
     ("bookmarks", "Chrome bookmark script pointers"),
     ("links", "this index — docs, scripts, defaults"),
+    ("docker", "monitor + cleanup — stats, top, stop, delete, reset (see shuttle docker --help)"),
 )
+
+DOCKER_QUICK_DEFAULTS: tuple[tuple[str, str], ...] = (
+    ("docker stats", "top consumers by cpu, memory, or storage"),
+    ("docker top", "dashboard across cpu, memory, and storage"),
+    ("docker reset", "stop all, delete containers, prune images + cache — --yes"),
+    ("docker stop", "stop running containers — --yes"),
+    ("docker container-delete", "remove containers — --yes"),
+    ("docker image-delete", "prune unused images — --yes"),
+)
+
+DOCKER_SCRIPT_COMMANDS: tuple[tuple[str, str], ...] = (
+    ("stats.sh", "docker stats"),
+    ("reset.sh", "docker reset"),
+    ("stop.sh", "docker stop"),
+    ("container-delete.sh", "docker container-delete"),
+    ("image-delete.sh", "docker image-delete"),
+)
+
+DOCKER_QUICK_DEFAULT_SCRIPTS: dict[str, str] = {
+    "docker reset": "scripts/docker/reset.sh",
+    "docker stop": "scripts/docker/stop.sh",
+    "docker container-delete": "scripts/docker/container-delete.sh",
+    "docker image-delete": "scripts/docker/image-delete.sh",
+    "docker stats": "scripts/docker/stats.sh",
+}
 
 
 def doc_entries(root: Path | None = None) -> list[CatalogEntry]:

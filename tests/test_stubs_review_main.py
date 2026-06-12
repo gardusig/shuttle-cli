@@ -71,17 +71,16 @@ def test_run_review_quick_skips_pytest() -> None:
 
 
 @patch("shuttle.services.git_review.subprocess.run")
-def test_run_review_runs_pytest(mock_run: MagicMock, tmp_path) -> None:
+def test_run_review_runs_docker_unit_tests(mock_run: MagicMock, tmp_path) -> None:
     root = tmp_path
     scripts = root / "scripts"
     scripts.mkdir()
     (scripts / "noop.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
-    venv_bin = root / ".venv" / "bin"
-    venv_bin.mkdir(parents=True)
-    (venv_bin / "python").write_text("", encoding="utf-8")
     mock_run.return_value = MagicMock(returncode=0)
     with patch("shuttle.services.git_review.project_root", return_value=root):
         assert run_review(install=False, quick=False) == 0
+    docker_unit = [c for c in mock_run.call_args_list if c.args and c.args[0] == ["./scripts/test-unit.sh"]]
+    assert docker_unit, "expected ./scripts/test-unit.sh"
 
 
 def test_gated_git_write_with_yes() -> None:

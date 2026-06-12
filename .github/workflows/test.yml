@@ -12,20 +12,26 @@ concurrency:
 
 jobs:
   unit:
-    name: Unit tests (macOS)
-    runs-on: macos-latest
+    name: Unit tests (Docker)
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build dev/test image
+        uses: docker/build-push-action@v6
         with:
-          python-version: "3.12"
-      - name: Bootstrap
-        run: ./scripts/bootstrap.sh
-      - name: Shell syntax (chrome)
-        run: bash -n scripts/chrome/*.sh
-      - name: Pytest (≥80% coverage)
-        run: source .venv/bin/activate && pytest -q --cov=shuttle --cov-report=term-missing --cov-fail-under=80
+          context: .
+          load: true
+          tags: shuttle-cli:dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Unit tests in container
+        env:
+          SHUTTLE_DOCKER_IMAGE: shuttle-cli:dev
+          SHUTTLE_DOCKER_SKIP_BUILD: "1"
+        run: ./scripts/test-unit.sh
 
   integration:
     name: Integration tests (Docker)
@@ -35,16 +41,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build integration image
+      - name: Build dev/test image
         uses: docker/build-push-action@v6
         with:
           context: .
           load: true
-          tags: shuttle-cli-integration:ci
+          tags: shuttle-cli:dev
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Run pytest, public endpoints, and smoke in container
+      - name: Integration tests in container
         env:
-          SHUTTLE_DOCKER_IMAGE: shuttle-cli-integration:ci
+          SHUTTLE_DOCKER_IMAGE: shuttle-cli:dev
           SHUTTLE_DOCKER_SKIP_BUILD: "1"
-        run: ./scripts/test-in-docker.sh
+        run: ./scripts/test-integration.sh

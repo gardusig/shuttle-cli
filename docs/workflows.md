@@ -4,21 +4,19 @@ Visual maps for everyday `shuttle` workflows. Command details live in [git.md](g
 
 ## Full issue lifecycle
 
-The four workflow shortcuts map to how you actually work with GitHub issues:
-
 ```mermaid
 flowchart TD
     subgraph before [1 — Before work]
-        P["shuttle git prep<br/>main · fetch · reset · clean -fdx"]
+        P["shuttle git reset --yes --main-only<br/>sync main"]
     end
 
     subgraph start [2 — Start issue]
-        K["shuttle git kick issue-9-slug<br/>prep + new branch"]
+        K["shuttle git start issue-9-slug --yes<br/>align main + new branch"]
     end
 
     subgraph loop [3 — During work]
         D["edit files"]
-        S["shuttle git ship<br/>add · commit · push"]
+        S["shuttle git push<br/>add · commit · push"]
         Y["shuttle git pull<br/>stay current on main"]
         D --> S
         S --> D
@@ -26,8 +24,8 @@ flowchart TD
     end
 
     subgraph after [4 — After merge]
-        L["shuttle git land --yes<br/>main · delete merged branches"]
-        L2["shuttle git land --yes --all-local<br/>delete every local branch except main"]
+        L["shuttle git reset --yes<br/>sync main · delete merged branches"]
+        L2["shuttle git reset --yes --all-local<br/>delete every local branch except main"]
     end
 
     P --> K --> loop
@@ -38,31 +36,33 @@ flowchart TD
 
 | Phase | Shortcut | What it does | Older equivalent |
 | --- | --- | --- | --- |
-| Before work | `git prep` | `main` + fetch + reset --hard + clean -fdx | `git main --yes` |
-| Start issue | `git kick [branch]` | prep + `checkout -b` | `git start --align-main --yes` |
-| Publish WIP | `git ship` | add + commit + push (branch summary gate) | `git commit` + `git push --yes` |
+| Sync main | `git reset --yes --main-only` | checkout `main`, fetch, pull/ff or hard-reset, clean worktree | `git main --yes` |
+| Start issue | `git start [branch] --yes` | align main + `checkout -b` | — |
+| Publish WIP | `git push --yes` | add + commit + push current branch; on `main`, start random branch first | `git commit` + `git push` |
 | Stay current | `git pull` | fetch + merge upstream/main into feature branch | — |
-| After merge | `git land` | prep + delete **merged** branches (+ remote) | `git post-merge-cleanup --yes` |
-| Nuclear local | `git land --all-local` | prep + delete **all** local branches except main | `git branch-clear --yes` |
+| After merge | `git reset --yes` | return to synced main + delete **merged** branches (+ remote) | `git post-merge-cleanup --yes` |
+| Nuclear local | `git reset --yes --all-local` | synced main + delete **all** local branches except main | `git branch-clear --yes` |
 
-All destructive steps show the **write gate** (branch, dirty state, intent) before running. Pass `--yes` in scripts/CI.
+All destructive steps show the **write gate** (branch, dirty state, intent) before running. Pass `--yes` / `-y` to skip the prompt (summary still prints).
+
+**Leaving a feature branch:** `reset` commits uncommitted work on the current branch (message `.` by default) before syncing `main`. Pass `--discard` to drop uncommitted changes instead.
 
 ### Example session
 
 ```bash
-# Monday: clean slate
-shuttle git prep --yes
+# Monday: synced main
+shuttle git reset --yes --main-only
 
 # Pick up GitHub issue #9
-shuttle git kick issue-9-docker --yes
+shuttle git start issue-9-docker --yes
 
 # Loop until PR is ready
-shuttle git ship          # interactive
+shuttle git push          # interactive
 shuttle git pull          # optional: merge latest main
-shuttle git ship --yes
+shuttle git push --yes
 
 # After PR merged
-shuttle git land --yes
+shuttle git reset --yes
 ```
 
 ## Feature work (start → publish)
@@ -76,9 +76,9 @@ flowchart LR
     end
 
     subgraph daily [Daily loop]
-        C["shuttle git kick<br/>or git start"]
+        C["shuttle git start --no-prep"]
         D["edit files"]
-        E["shuttle git ship"]
+        E["shuttle git push"]
         F{"more work?"}
         G["open PR / merge"]
         C --> D --> E --> F
@@ -95,7 +95,7 @@ flowchart LR
 flowchart TD
     A["on feature branch"] --> B["shuttle git pull<br/>fetch + merge upstream + main"]
     B --> C{conflicts?}
-    C -->|no| D["shuttle git ship"]
+    C -->|no| D["shuttle git push"]
     C -->|yes| E["resolve conflicts"]
     E --> D
 ```
@@ -104,7 +104,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["ship / prep / kick / land / push …"] --> B["read worktree snapshot"]
+    A["push / reset / start …"] --> B["read worktree snapshot"]
     B --> C["intent summary<br/>branch · dirty · plan"]
     C --> D["--- shuttle write gate ---"]
     D --> E{"--yes or confirm?"}
@@ -117,8 +117,8 @@ flowchart TD
 ```mermaid
 flowchart TD
     A["PR merged on GitHub"] --> B{"how aggressive?"}
-    B -->|default| C["shuttle git land --yes<br/>merged branches only"]
-    B -->|nuclear local| D["shuttle git land --yes --all-local"]
+    B -->|default| C["shuttle git reset --yes<br/>merged branches only"]
+    B -->|nuclear local| D["shuttle git reset --yes --all-local"]
     B -->|legacy| E["shuttle git post-merge-cleanup --yes"]
     B -->|remote too| F["shuttle git branch-clear --yes --delete-remote"]
 ```
@@ -129,7 +129,7 @@ flowchart TD
 flowchart LR
     subgraph review [Workspace health]
         R1["shuttle git review"]
-        R2["bootstrap · shellcheck · pytest"]
+        R2["shell syntax · test-unit.sh in Docker"]
         R1 --> R2
     end
 
@@ -141,8 +141,8 @@ flowchart LR
     end
 
     subgraph docker [Isolated checks]
-        D1["./scripts/test-in-docker.sh"]
-        D2["copy repo · pytest · smoke"]
+        D1["./scripts/test-integration.sh"]
+        D2["copy repo · pytest · smoke · live docker"]
         D1 --> D2
     end
 ```

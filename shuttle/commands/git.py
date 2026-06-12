@@ -86,105 +86,90 @@ def commit_cmd(
         rprint("[yellow]nothing to commit[/yellow]")
 
 
+def _push_plan(
+    svc: GitShortcuts,
+    message: str,
+    *,
+    allow_main: bool,
+) -> tuple[str, list[str]]:
+    """Write-gate question + intent lines for push (start first when on main)."""
+    current = svc.current_branch()
+    remote = "origin" if svc.remote_exists("origin") else "(none)"
+    dirty = svc.is_dirty()
+    if current == "main" and not allow_main:
+        new_branch = suggest_branch_name(svc.local_branch_names(exclude_main=False))
+        question = f"Start {new_branch!r}, commit, and push to {remote}?"
+        lines = [
+            f"intent: start {new_branch!r} (no prep) → add → commit → push",
+            "from_branch: main",
+            f"target_branch: {new_branch}",
+            f"commit_message: {message!r}",
+            f"dirty: {dirty}",
+            f"remote: {remote}",
+        ]
+        return question, lines
+
+    question = f"Commit and push {current!r} to {remote}?"
+    lines = [
+        "intent: git add -A → commit → push origin HEAD",
+        f"branch: {current}",
+        f"commit_message: {message!r}",
+        f"dirty: {dirty}",
+        f"remote: {remote}",
+    ]
+    if current == "main" and allow_main:
+        lines.append("note: pushing directly on main (--allow-main)")
+    return question, lines
+
+
 @git_app.command("push")
 def push_cmd(
     allow_main: bool = typer.Option(False, "--allow-main", help="Allow pushing from main."),
     message: str = typer.Option(".", "-m", "--message", help="Commit message if tree is dirty."),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Confirm push to remote."),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Skip confirmation prompt; stage, commit, and push.",
+    ),
 ) -> None:
-    """Commit if dirty, then push to origin."""
-    _write_gate("push", yes=yes, question="Push current branch to remote?")
-    _svc().push(allow_main=allow_main, message=message, yes=True)
-    rprint("[green]pushed[/green]")
-
-
-def _ship_intent_lines(svc: GitShortcuts, message: str, *, allow_main: bool) -> list[str]:
-    branch = svc.current_branch()
-    lines = [
-        "intent: git add -A → commit → push origin HEAD",
-        f"branch: {branch}",
-        f"commit_message: {message!r}",
-        f"dirty: {svc.is_dirty()}",
-        f"remote: {'origin' if svc.remote_exists('origin') else '(none)'}",
-    ]
-    if branch == "main" and not allow_main:
-        lines.append("warning: refusing main without --allow-main")
-    return lines
-
-
-@git_app.command("ship")
-def ship_cmd(
-    allow_main: bool = typer.Option(False, "--allow-main", help="Allow shipping from main."),
-    message: str = typer.Option(".", "-m", "--message", help="Commit message for staged changes."),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Confirm ship (stage, commit, push)."),
-) -> None:
-    """Stage all, commit, and push — with branch summary confirmation first."""
+    """Stage if dirty, commit, and push (start first when on main)."""
     svc = _svc()
-    branch = svc.current_branch()
-    _write_gate(
-        "ship",
-        yes=yes,
-        question=f"Ship changes from {branch!r} to origin?",
-        extra_lines=_ship_intent_lines(svc, message, allow_main=allow_main),
-    )
-    svc.push(allow_main=allow_main, message=message, yes=True)
-    rprint("[green]shipped[/green]")
+    question, intent_lines = _push_plan(svc, message, allow_main=allow_main)
+    _write_gate("push", yes=yes, question=question, extra_lines=intent_lines)
+    branch = svc.push(allow_main=allow_main, message=message, yes=True)
+    rprint(f"[green]pushed[/green] on {branch}")
 
 
-def _prep_intent_lines(svc: GitShortcuts, *, keep_ignored: bool) -> list[str]:
-    clean = "git clean -fd" if keep_ignored else "git clean -fdx"
+def _align_main_intent_lines(svc: GitShortcuts, *, keep_ignored: bool) -> list[str]:
+    clean_mode = "git clean -fd" if keep_ignored else "git clean -fdx"
+    upstream = "pull --ff-only" if svc.has_upstream() else "reset --hard to remote main"
     return [
-        "intent: checkout main → fetch → reset --hard → " + clean,
+        f"intent: checkout main → fetch → {upstream} → " + clean_mode,
         f"canonical_main: {svc.canonical_main_ref()}",
         f"dirty: {svc.is_dirty()}",
     ]
 
 
-@git_app.command("prep")
-def prep_cmd(
-    yes: bool = typer.Option(False, "--yes", "-y", help="Discard dirty tree and align main."),
-    keep_ignored: bool = typer.Option(False, "--keep-ignored", help="Use git clean -fd instead of -fdx."),
-) -> None:
-    """Before work: fresh local main (fetch, reset, clean)."""
-    svc = _svc()
-    _write_gate(
-        "prep",
-        yes=yes,
-        question="Reset main to remote and clean working tree?",
-        extra_lines=_prep_intent_lines(svc, keep_ignored=keep_ignored),
-    )
-    svc.prep(yes=True, keep_ignored=keep_ignored)
-    rprint("[green]prep complete[/green] — on main, synced with remote")
-
-
-@git_app.command("kick")
-def kick_cmd(
-    branch: str | None = typer.Argument(
-        None,
-        help="Branch name (default wip-YYMMDD-NNN; use issue slug e.g. issue-9-docker).",
-    ),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Confirm align main + new branch."),
-    keep_ignored: bool = typer.Option(False, "--keep-ignored", help="Use git clean -fd instead of -fdx."),
-) -> None:
-    """Start issue work: align main, then create feature branch."""
-    svc = _svc()
-    branch_name = branch or suggest_branch_name(svc.local_branch_names(exclude_main=False))
-    extra = [
-        "intent: prep (align main) → git checkout -b",
-        f"branch_to_create: {branch_name}",
-        *_prep_intent_lines(svc, keep_ignored=keep_ignored),
-    ]
-    _write_gate(
-        "kick",
-        yes=yes,
-        question=f"Prep main and start branch {branch_name!r}?",
-        extra_lines=extra,
-    )
-    name = svc.kick(branch_name, yes=True, keep_ignored=keep_ignored)
-    rprint(f"[green]kick[/green] on branch {name}")
-
-
-def _land_intent_lines(svc: GitShortcuts, *, all_local: bool) -> list[str]:
+def _reset_intent_lines(
+    svc: GitShortcuts,
+    message: str,
+    *,
+    keep_ignored: bool,
+    main_only: bool,
+    all_local: bool,
+    discard: bool,
+) -> list[str]:
+    lines = _align_main_intent_lines(svc, keep_ignored=keep_ignored)
+    current = svc.current_branch()
+    if current != "main" and svc.is_dirty():
+        if discard:
+            lines.append("leave_branch: discard uncommitted changes")
+        else:
+            lines.append(f"leave_branch: commit with message {message!r}")
+    if main_only:
+        lines.insert(0, "intent: return to main only (no branch deletion)")
+        return lines
     if all_local:
         branches = svc.local_branch_names(exclude_main=True)
         label = "local_branches_to_delete"
@@ -193,60 +178,115 @@ def _land_intent_lines(svc: GitShortcuts, *, all_local: bool) -> list[str]:
         branches = svc.merged_branch_names(include_current=True)
         label = "merged_branches_to_delete"
         mode = "merged branches only"
-    lines = [
-        "intent: checkout main → fetch → reset --hard → clean → delete branches",
-        f"delete_mode: {mode}",
-        f"canonical_main: {svc.canonical_main_ref()}",
-    ]
+    lines[0] = "intent: return to main → delete branches"
+    lines.insert(1, f"delete_mode: {mode}")
     lines.extend(_branch_preview_lines(label, branches))
     return lines
 
 
-@git_app.command("land")
-def land_cmd(
-    yes: bool = typer.Option(False, "--yes", "-y", help="Confirm post-merge cleanup."),
+@git_app.command("reset")
+def reset_cmd(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Confirm return to synced main."),
+    keep_ignored: bool = typer.Option(False, "--keep-ignored", help="Use git clean -fd instead of -fdx."),
+    main_only: bool = typer.Option(
+        False,
+        "--main-only",
+        help="Sync main only; do not delete local branches.",
+    ),
     all_local: bool = typer.Option(
         False,
         "--all-local",
         help="Delete every local branch except main (not only merged).",
     ),
-    keep_ignored: bool = typer.Option(False, "--keep-ignored", help="Use git clean -fd instead of -fdx."),
+    message: str = typer.Option(
+        ".",
+        "-m",
+        "--message",
+        help="Commit message when leaving a dirty branch (default: commit with '.').",
+    ),
+    discard: bool = typer.Option(
+        False,
+        "--discard",
+        help="Discard uncommitted changes on the current branch instead of committing.",
+    ),
 ) -> None:
-    """After merge: return to main, sync, and remove feature branches."""
+    """Return to synced main; commit dirty work on the current branch, then prune branches."""
     svc = _svc()
-    _write_gate(
-        "land",
-        yes=yes,
-        question="Land on main and delete feature branches?",
-        extra_lines=_land_intent_lines(svc, all_local=all_local),
+    question = (
+        "Return to synced main only?"
+        if main_only
+        else "Return to synced main and delete feature branches?"
     )
-    deleted = svc.land(yes=True, all_local=all_local, keep_ignored=keep_ignored)
-    rprint(f"[green]landed[/green] on main; removed {len(deleted)} branch(es)")
+    _write_gate(
+        "reset",
+        yes=yes,
+        question=question,
+        extra_lines=_reset_intent_lines(
+            svc,
+            message,
+            keep_ignored=keep_ignored,
+            main_only=main_only,
+            all_local=all_local,
+            discard=discard,
+        ),
+    )
+    deleted = svc.reset(
+        yes=True,
+        keep_ignored=keep_ignored,
+        main_only=main_only,
+        all_local=all_local,
+        branch_message=message,
+        discard=discard,
+    )
+    if main_only:
+        rprint("[green]reset[/green] — on main, synced with remote")
+    else:
+        rprint(f"[green]reset[/green] on main; removed {len(deleted)} branch(es)")
 
 
 @git_app.command("start")
 def start_cmd(
-    branch: str | None = typer.Argument(None, help="Branch name (default wip-<timestamp>)."),
-    align_main: bool = typer.Option(False, "--align-main", help="Align main before branching (destructive)."),
-    no_push: bool = typer.Option(True, "--no-push/--push", help="Skip push after branch creation."),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Confirm destructive align or push."),
+    branch: str | None = typer.Argument(
+        None,
+        help="Branch name (default wip-YYMMDD-NNN; use issue slug e.g. issue-9-docker).",
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Confirm align main + new branch (or push)."),
+    keep_ignored: bool = typer.Option(False, "--keep-ignored", help="Use git clean -fd instead of -fdx."),
+    no_prep: bool = typer.Option(
+        False,
+        "--no-prep",
+        help="Branch from current HEAD without aligning main.",
+    ),
+    no_push: bool = typer.Option(True, "--no-push/--push", help="Push new branch after create."),
 ) -> None:
-    """Create feature branch from current state (no reset/clean by default)."""
-    if align_main:
+    """Start issue work: sync main, then create a feature branch."""
+    svc = _svc()
+    branch_name = branch or suggest_branch_name(svc.local_branch_names(exclude_main=False))
+    if not no_prep:
+        extra = [
+            "intent: align main → git checkout -b",
+            f"branch_to_create: {branch_name}",
+            *_align_main_intent_lines(svc, keep_ignored=keep_ignored),
+        ]
         _write_gate(
-            "start-align-main",
+            "start",
             yes=yes,
-            question="Align main (reset/clean) before creating branch?",
+            question=f"Sync main and start branch {branch_name!r}?",
+            extra_lines=extra,
         )
-    if not no_push:
+    elif not no_push:
         _write_gate("start-push", yes=yes, question="Push new branch to remote?")
-    name = _svc().start(
-        branch,
-        align_main=align_main,
+    name = svc.start(
+        branch_name,
         yes=yes,
+        keep_ignored=keep_ignored,
+        prep=not no_prep,
         no_push=no_push,
     )
-    rprint(f"[green]on branch[/green] {name}")
+    if no_prep:
+        rprint(f"[green]on branch[/green] {name}")
+    else:
+        rprint(f"[green]started[/green] on branch {name}")
 
 
 @git_app.command("stash")
@@ -455,23 +495,6 @@ def rebase_cmd(
     rprint("[green]rebase step complete[/green]")
 
 
-@git_app.command("reset")
-def reset_cmd(
-    target: str | None = typer.Argument(None, help="Reset target (default @{u} or canonical main)."),
-    yes: bool = typer.Option(False, "--yes", "-y"),
-    keep_ignored: bool = typer.Option(False, "--keep-ignored"),
-) -> None:
-    """Hard reset + clean current branch."""
-    _write_gate(
-        "reset",
-        yes=yes,
-        question="Hard reset and clean working tree?",
-        extra_lines=[f"target: {target or '@{u} or canonical main'}"],
-    )
-    _svc().reset(target, yes=True, keep_ignored=keep_ignored)
-    rprint("[green]reset complete[/green]")
-
-
 @git_app.command("revert")
 def revert_cmd(
     sha: str | None = typer.Argument(None),
@@ -608,10 +631,10 @@ def review_cmd(
     quick: bool = typer.Option(
         False,
         "--quick",
-        help="Shell syntax only; skip pytest (integration smoke).",
+        help="Shell syntax only; skip Docker unit tests.",
     ),
 ) -> None:
-    """Workspace health: bootstrap, shell syntax checks, pytest (@git-review)."""
+    """Workspace health: shell syntax checks and Docker unit tests (@git-review)."""
     code = run_review(install=not no_install, quick=quick)
     if code == 0:
         rprint("[green]review passed[/green]")

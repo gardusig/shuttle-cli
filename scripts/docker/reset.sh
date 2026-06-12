@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# @git-land — post-merge: main + delete feature branches
+# @docker-reset — stop all, delete containers, prune images and cache
 set -euo pipefail
 # shellcheck source=_common.sh
 source "$(dirname "$0")/_common.sh"
-exec_shuttle git land "$@"
+exec_shuttle docker reset "$@"

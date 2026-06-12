@@ -50,6 +50,11 @@ def test_top_level_commands_listed_in_registry() -> None:
         assert any(c.args and c.args[0] == name for c in endpoint_checks())
 
 
+def test_docker_top_level_in_registry() -> None:
+    assert "docker" in TOP_LEVEL_COMMANDS
+    assert any(c.label == "docker --help" for c in endpoint_checks())
+
+
 @pytest.mark.integration
 def test_run_all_public_endpoint_checks() -> None:
     SCRATCH.mkdir(exist_ok=True)

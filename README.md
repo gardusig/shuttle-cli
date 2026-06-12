@@ -2,10 +2,12 @@
 
 macOS CLI for **git shortcuts** (deterministic, no AI) and future backup/sync workflows.
 
-## Quickstart (macOS)
+## Install (macOS)
+
+Local setup is for **using** shuttle only (runtime deps). **Verification** always runs in Docker — same image locally and in CI.
 
 ```bash
-./scripts/bootstrap.sh
+./scripts/bootstrap.sh          # venv + runtime install
 source .venv/bin/activate
 python -m shuttle --help
 ```
@@ -17,17 +19,17 @@ Optional install to `~/.local/bin`:
 shuttle git --help
 ```
 
+Do not run `pytest` on the host; use `./scripts/test-unit.sh` and `./scripts/test-integration.sh` instead.
+
 ## Common git commands
 
 | Task | Command |
 | --- | --- |
-| **Before work** (clean main) | `shuttle git prep` |
-| **Start issue** (prep + branch) | `shuttle git kick issue-9-slug` |
-| **During work** (add + commit + push) | `shuttle git ship` |
-| **After merge** (main + prune branches) | `shuttle git land --yes` |
-| Start branch (no prep) | `shuttle git start [name]` |
+| **Sync main** (before/after work) | `shuttle git reset --yes` (`--main-only` to skip branch prune) |
+| **Start issue** (align main + branch) | `shuttle git start issue-9-slug --yes` |
+| **During work** (add + commit + push) | `shuttle git push --yes` (on `main`, starts random branch first) |
+| Branch in place (no align) | `shuttle git start [name] --no-prep` |
 | Commit only | `shuttle git commit` |
-| Push only | `shuttle git push --yes` |
 | Sync feature branch | `shuttle git pull` |
 | Delete merged branch | `shuttle git branch-delete BRANCH --yes` |
 | Clear all branches (keep `main`) | `shuttle git branch-clear --yes` |
@@ -37,7 +39,7 @@ Short alias: `shuttle g push --yes` == `shuttle git push --yes`.
 
 Shell wrappers for every [cursor-skills git skill](https://github.com/gardusig/cursor-skills/tree/main/skills/git) live in `scripts/git/` (e.g. `./scripts/git/review.sh`).
 
-**Safety:** destructive actions (reset, clean, delete, push) require `--yes` or an interactive confirmation. `shuttle git start` creates a branch from the current state without reset/clean unless you pass `--align-main --yes`.
+**Safety:** destructive actions (reset, clean, delete, push) require `--yes` or an interactive confirmation. Default `shuttle git start` aligns main then branches; pass `--no-prep` to branch from the current state.
 
 ## Chrome bookmarks
 
@@ -48,15 +50,37 @@ Shell wrappers for every [cursor-skills git skill](https://github.com/gardusig/c
 
 See [docs/bookmarks.md](docs/bookmarks.md).
 
-## Docker integration
+## Docker
 
-Run CLI and shell smoke checks in a disposable container copy:
+Local Docker monitor and cleanup (requires `docker` on PATH; no container start):
+
+| Task | Command |
+| --- | --- |
+| **Dashboard** (CPU, memory, storage) | `shuttle docker top` |
+| **By domain** | `shuttle docker stats --by cpu` / `memory` / `storage` |
+| **Storage lists** | `shuttle docker images` · `shuttle docker containers` · `shuttle docker df` |
+| **Stop running** | `shuttle docker stop --yes` |
+| **Delete containers** | `shuttle docker container-delete --yes` |
+| **Prune images** | `shuttle docker image-delete --yes` (`--all-images` for all unused) |
+| **Full reset** | `shuttle docker reset --yes` |
+| Targeted cleanup | `shuttle docker clean containers --yes` · `clean images` · `clean all` |
+
+Shell wrappers live in `scripts/docker/` (e.g. `./scripts/docker/reset.sh --yes`).
+
+Destructive commands use the write gate; pass `--yes` in scripts.
+
+## Verify (Docker)
+
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) on macOS (or Docker Engine on Linux). The `shuttle-cli:dev` Linux image is the only supported test environment:
 
 ```bash
-./scripts/test-in-docker.sh
+./scripts/docker/build-image.sh   # build once (or auto-build on first test run)
+./scripts/test-unit.sh            # unit tests (≥80% coverage)
+./scripts/test-integration.sh     # full pytest + smoke + live docker
+./scripts/docker/shell.sh         # onboard: interactive shell in container
 ```
 
-CI runs **unit** (macOS pytest) and **integration** (Docker) on every pull request. See [docs/docker.md](docs/docker.md).
+See [docs/docker.md](docs/docker.md).
 
 ## Docs
 

@@ -9,6 +9,26 @@ def test_root_help() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "git" in result.stdout
+    assert "docker" in result.stdout
+
+
+def test_docker_help() -> None:
+    result = runner.invoke(app, ["docker", "--help"])
+    assert result.exit_code == 0
+    for cmd in (
+        "ps",
+        "stats",
+        "containers",
+        "images",
+        "top",
+        "df",
+        "stop",
+        "container-delete",
+        "image-delete",
+        "reset",
+        "clean",
+    ):
+        assert cmd in result.stdout
 
 
 def test_git_help() -> None:
@@ -17,10 +37,6 @@ def test_git_help() -> None:
     for cmd in (
         "commit",
         "push",
-        "ship",
-        "prep",
-        "kick",
-        "land",
         "pull",
         "start",
         "main",

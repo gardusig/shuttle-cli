@@ -18,7 +18,6 @@ Each command maps to a [cursor-skills git skill](https://github.com/gardusig/cur
 | `@git-post-merge-cleanup` | `scripts/git/post-merge-cleanup.sh` | `shuttle git post-merge-cleanup` |
 | `@git-pull` | `scripts/git/pull.sh` | `shuttle git pull` |
 | `@git-push` | `scripts/git/push.sh` | `shuttle git push` |
-| `@git-ship` | `scripts/git/ship.sh` | `shuttle git ship` |
 | `@git-rebase` | `scripts/git/rebase.sh` | `shuttle git rebase` |
 | `@git-reset` | `scripts/git/reset.sh` | `shuttle git reset` |
 | `@git-revert` | `scripts/git/revert.sh` | `shuttle git revert` |
@@ -44,10 +43,9 @@ Operations that mutate remote state or discard local work require confirmation:
 
 | Operation | Confirmation |
 | --- | --- |
-| `git push` | `--yes` or interactive prompt |
-| `git ship` | `--yes` or interactive prompt (shows branch + intent summary) |
-| `git main` (reset/clean) | `--yes` or interactive prompt |
-| `git reset` | `--yes` or interactive prompt |
+| `git push` | `--yes` or interactive prompt (shows branch + intent summary) |
+| `git reset` | `--yes` or interactive prompt (commits dirty branch work by default) |
+| `git main` (align main only) | `--yes` or interactive prompt |
 | `git branch-delete` | `--yes` or interactive prompt |
 | `git branch-clear` | `--yes` or interactive prompt; optional second prompt for remote branches |
 | `git stash drop/clear` | `--yes` or interactive prompt |
@@ -56,34 +54,43 @@ Operations that mutate remote state or discard local work require confirmation:
 No confirmation needed:
 
 - `git commit`
-- `git start` (creates branch from current state)
+- `git start --no-prep` (creates branch from current state)
 - `git pull`
 - `git stash push/list/apply/pop`
 
 ## Start a branch
 
-```bash
-shuttle git start my-feature
-```
-
-Creates a branch from the **current** working tree. Does not reset or clean.
-
-To align `main` first (destructive):
+Default (issue workflow — align main + branch):
 
 ```bash
-shuttle git start my-feature --align-main --yes
+shuttle git start issue-9-docker --yes
 ```
+
+Branch from the **current** working tree without reset/clean:
+
+```bash
+shuttle git start my-feature --no-prep
+```
+
+## Return to synced main
+
+```bash
+shuttle git reset --yes              # commit dirty branch work, sync main, prune merged branches
+shuttle git reset --yes --main-only  # sync main only (keep local branches)
+shuttle git reset --yes --discard    # drop uncommitted work on current branch
+```
+
+On a feature branch with uncommitted edits, `reset` commits with `.` (or `-m`) before checking out `main`. Then it fetches, fast-forwards `main` when upstream exists (else hard-resets to `origin/main`), and cleans the worktree.
 
 ## Publish
 
 ```bash
-shuttle git ship              # interactive: branch summary → add + commit + push
-shuttle git ship --yes        # non-interactive
-shuttle git commit -m "wip"
-shuttle git push --yes
+shuttle git push              # interactive: branch summary → add + commit + push
+shuttle git push --yes        # non-interactive
+shuttle git commit -m "wip"   # commit only (no push)
 ```
 
-`ship` shows a write gate with branch, dirty state, commit message, and intent (`add → commit → push`) before running.
+`push` shows a write gate with branch, dirty state, commit message, and intent (`add → commit → push`) before running. On `main`, it starts a random branch first unless you pass `--allow-main`.
 
 ## Clear all branches (nuclear local reset)
 
@@ -126,7 +133,7 @@ shuttle git review
 ./scripts/git/review.sh
 ```
 
-Runs bootstrap (if needed), shell syntax checks, and `pytest`. No commit or push.
+Runs shell syntax checks; without `--quick`, also `./scripts/test-unit.sh` (Docker — requires Docker Desktop). No commit or push. Use `shuttle git review --quick` when Docker is unavailable.
 
 ## Docs inventory
 

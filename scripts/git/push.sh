@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @git-push — cursor-skills/skills/git/push
+# @git-push — stage, commit, and push (branches first on main; pass --yes)
 set -euo pipefail
 # shellcheck source=_common.sh
 source "$(dirname "$0")/_common.sh"

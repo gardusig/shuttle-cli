@@ -81,19 +81,64 @@ def test_align_main_dirty_without_yes(mock_run: MagicMock, svc: GitShortcuts) ->
 
 
 @patch(PATCH)
-def test_align_main_success(mock_run: MagicMock, svc: GitShortcuts) -> None:
+def test_sync_main_fdx_excludes_venv(mock_run: MagicMock, svc: GitShortcuts, monkeypatch) -> None:
+    mock_run.return_value = _ok()
+    monkeypatch.setenv("VIRTUAL_ENV", str(Path(svc.top) / ".venv"))
+    with (
+        patch.object(svc, "is_dirty", return_value=False),
+        patch.object(svc, "checkout_main"),
+        patch.object(svc, "fetch_all"),
+        patch.object(svc, "has_upstream", return_value=False),
+        patch.object(svc, "canonical_main_ref", return_value="origin/main"),
+    ):
+        svc.sync_main(yes=True, keep_ignored=False)
+    clean = [c.args[0] for c in mock_run.call_args_list if c.args[0][0] == "clean"]
+    assert clean == [["clean", "-fdx", "-e", ".venv"]]
+
+
+@patch(PATCH)
+def test_sync_main_hard_resets_dirty_after_pull(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    mock_run.return_value = _ok()
+    with (
+        patch.object(svc, "is_dirty", side_effect=[True, True]),
+        patch.object(svc, "checkout_main"),
+        patch.object(svc, "fetch_all"),
+        patch.object(svc, "has_upstream", return_value=True),
+        patch.object(svc, "canonical_main_ref", return_value="origin/main"),
+    ):
+        svc.sync_main(yes=True, keep_ignored=False)
+    hard_resets = [c.args[0] for c in mock_run.call_args_list if c.args[0][:2] == ["reset", "--hard"]]
+    assert ["reset", "--hard", "origin/main"] in hard_resets
+
+
+@patch(PATCH)
+def test_sync_main_pulls_when_upstream(mock_run: MagicMock, svc: GitShortcuts) -> None:
     mock_run.return_value = _ok()
     with (
         patch.object(svc, "is_dirty", return_value=False),
         patch.object(svc, "checkout_main"),
         patch.object(svc, "fetch_all"),
+        patch.object(svc, "has_upstream", return_value=True),
+    ):
+        svc.sync_main(yes=True, keep_ignored=True)
+    assert ["pull", "--ff-only"] in [c.args[0] for c in mock_run.call_args_list]
+    assert [["clean", "-fd"]] == [
+        c.args[0] for c in mock_run.call_args_list if c.args[0][0] == "clean"
+    ]
+
+
+@patch(PATCH)
+def test_sync_main_hard_resets_without_upstream(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    mock_run.return_value = _ok()
+    with (
+        patch.object(svc, "is_dirty", return_value=False),
+        patch.object(svc, "checkout_main"),
+        patch.object(svc, "fetch_all"),
+        patch.object(svc, "has_upstream", return_value=False),
         patch.object(svc, "canonical_main_ref", return_value="origin/main"),
     ):
-        svc.align_main(yes=True, keep_ignored=True)
-    hard_reset = [c.args[0] for c in mock_run.call_args_list if c.args[0][:2] == ["reset", "--hard"]]
-    clean = [c.args[0] for c in mock_run.call_args_list if c.args[0][0] == "clean"]
-    assert hard_reset == [["reset", "--hard", "origin/main"]]
-    assert clean == [["clean", "-fd"]]
+        svc.sync_main(yes=True, keep_ignored=True)
+    assert ["reset", "--hard", "origin/main"] in [c.args[0] for c in mock_run.call_args_list]
 
 
 @patch(PATCH)
@@ -118,11 +163,32 @@ def test_push_requires_yes(mock_run: MagicMock, svc: GitShortcuts) -> None:
 
 
 @patch(PATCH)
-def test_push_refuses_main(mock_run: MagicMock, svc: GitShortcuts) -> None:
-    with patch.object(svc, "current_branch", return_value="main"):
-        with pytest.raises(RuntimeError, match="main"):
-            svc.push(yes=True)
-    mock_run.assert_not_called()
+def test_push_on_main_starts_before_push(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    mock_run.return_value = _ok()
+    with (
+        patch.object(svc, "current_branch", side_effect=["main", "wip-001"]),
+        patch.object(svc, "is_dirty", return_value=False),
+        patch.object(svc, "remote_exists", return_value=True),
+        patch.object(svc, "start", return_value="wip-001") as mock_start,
+    ):
+        name = svc.push(yes=True, message="wip")
+    assert name == "wip-001"
+    mock_start.assert_called_once_with(None, yes=True, prep=False)
+    assert mock_run.call_args.args[0] == ["push", "-u", "origin", "HEAD"]
+
+
+@patch(PATCH)
+def test_push_on_feature_branch_skips_start(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    mock_run.return_value = _ok()
+    with (
+        patch.object(svc, "current_branch", return_value="feat-x"),
+        patch.object(svc, "is_dirty", return_value=False),
+        patch.object(svc, "remote_exists", return_value=True),
+        patch.object(svc, "start") as mock_start,
+    ):
+        name = svc.push(yes=True, message="wip")
+    assert name == "feat-x"
+    mock_start.assert_not_called()
 
 
 @patch(PATCH)
@@ -166,15 +232,15 @@ def test_pull_merges_upstream_and_branch(mock_run: MagicMock, svc: GitShortcuts)
 
 
 @patch(PATCH)
-def test_start_with_align_and_push(mock_run: MagicMock, svc: GitShortcuts) -> None:
+def test_start_with_prep_and_push(mock_run: MagicMock, svc: GitShortcuts) -> None:
     mock_run.return_value = _ok()
     with (
         patch.object(svc, "align_main") as mock_align,
         patch.object(svc, "push") as mock_push,
     ):
-        name = svc.start("feat", align_main=True, yes=True, no_push=False)
+        name = svc.start("feat", yes=True, prep=True, no_push=False)
     assert name == "feat"
-    mock_align.assert_called_once_with(yes=True)
+    mock_align.assert_called_once_with(yes=True, keep_ignored=False)
     mock_push.assert_called_once()
 
 
@@ -278,11 +344,33 @@ def test_rebase_abort_continue_and_onto(mock_run: MagicMock, svc: GitShortcuts) 
 
 
 @patch(PATCH)
-def test_reset_fallback_ref(mock_run: MagicMock, svc: GitShortcuts) -> None:
-    mock_run.side_effect = [_ok(returncode=1), _ok(), _ok()]
-    with patch.object(svc, "fetch_all"), patch.object(svc, "canonical_main_ref", return_value="origin/main"):
-        svc.reset(yes=True)
-    assert ["reset", "--hard", "origin/main"] in [c.args[0] for c in mock_run.call_args_list]
+def test_reset_commits_before_sync_main(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    mock_run.return_value = _ok()
+    with (
+        patch.object(svc, "current_branch", side_effect=["feat", "main"]),
+        patch.object(svc, "is_dirty", return_value=True),
+        patch.object(svc, "commit", return_value=True) as mock_commit,
+        patch.object(svc, "sync_main") as mock_sync,
+        patch.object(svc, "branch_delete_all_merged", return_value=[]),
+    ):
+        svc.reset(yes=True, main_only=True)
+    mock_commit.assert_called_once_with(".")
+    mock_sync.assert_called_once_with(yes=True, keep_ignored=False)
+
+
+@patch(PATCH)
+def test_reset_discard_skips_commit(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    mock_run.return_value = _ok()
+    with (
+        patch.object(svc, "current_branch", return_value="feat"),
+        patch.object(svc, "is_dirty", return_value=True),
+        patch.object(svc, "commit") as mock_commit,
+        patch.object(svc, "sync_main"),
+        patch.object(svc, "branch_delete_all_merged", return_value=[]),
+    ):
+        svc.reset(yes=True, discard=True)
+    mock_commit.assert_not_called()
+    assert ["reset", "--hard", "HEAD"] in [c.args[0] for c in mock_run.call_args_list]
 
 
 @patch(PATCH)
@@ -343,8 +431,6 @@ def test_large_files_tracked_and_worktree(mock_run: MagicMock, svc: GitShortcuts
 
 @patch(PATCH)
 def test_post_merge_cleanup(mock_run: MagicMock, svc: GitShortcuts) -> None:
-    with (
-        patch.object(svc, "align_main"),
-        patch.object(svc, "branch_delete_all_merged", return_value=["x"]),
-    ):
+    with patch.object(svc, "reset", return_value=["x"]) as mock_reset:
         assert svc.post_merge_cleanup(yes=True) == ["x"]
+    mock_reset.assert_called_once_with(yes=True)

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Integration gate inside the container workdir (pytest + smoke + live docker).
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT"
+SHUTTLE_BOOTSTRAP_DEV=1 ./scripts/bootstrap.sh
+source .venv/bin/activate
+pytest -q
+./scripts/integration/smoke.sh
+python scripts/integration/check_docker_commands.py --live

@@ -65,10 +65,6 @@ CURSOR_SKILLS_GIT_SCRIPTS = [
     "scripts/git/post-merge-cleanup.sh",
     "scripts/git/pull.sh",
     "scripts/git/push.sh",
-    "scripts/git/ship.sh",
-    "scripts/git/prep.sh",
-    "scripts/git/kick.sh",
-    "scripts/git/land.sh",
     "scripts/git/rebase.sh",
     "scripts/git/reset.sh",
     "scripts/git/revert.sh",
@@ -77,6 +73,16 @@ CURSOR_SKILLS_GIT_SCRIPTS = [
     "scripts/git/stash.sh",
     "scripts/git/tag.sh",
     "scripts/git/zip.sh",
+]
+
+DOCKER_VERIFY_PATHS = [
+    "Dockerfile",
+    "scripts/docker/common.sh",
+    "scripts/docker/run-unit.sh",
+    "scripts/docker/run-integration.sh",
+    "scripts/test-unit.sh",
+    "scripts/test-integration.sh",
+    ".github/workflows/test.yml",
 ]
 
 REQUIRED_PATHS = [
@@ -88,6 +94,7 @@ REQUIRED_PATHS = [
     "data/bookmarks/.gitkeep",
     "scripts/bootstrap.sh",
     "scripts/install.sh",
+    *DOCKER_VERIFY_PATHS,
     "scripts/chrome/export-bookmarks.sh",
     "scripts/git/_common.sh",
     "shuttle/cli.py",
@@ -99,6 +106,13 @@ REQUIRED_PATHS = [
 def test_required_paths_exist() -> None:
     for rel in REQUIRED_PATHS:
         assert (ROOT / rel).exists(), f"missing {rel}"
+
+
+def test_bootstrap_is_runtime_only_by_default() -> None:
+    bootstrap = (ROOT / "scripts/bootstrap.sh").read_text()
+    assert "SHUTTLE_BOOTSTRAP_DEV" in bootstrap
+    assert 'pip install -e ".[dev]"' in bootstrap
+    assert 'pip install -e .' in bootstrap
 
 
 def test_placeholder_modules_import() -> None:

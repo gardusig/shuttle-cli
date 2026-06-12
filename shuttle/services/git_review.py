@@ -9,16 +9,16 @@ from shuttle.utils.config import project_root
 
 
 def run_review(*, install: bool = True, quick: bool = False) -> int:
-    """Bootstrap if needed, syntax-check shell scripts, optionally run pytest."""
+    """Syntax-check shell scripts; full mode runs ./scripts/test-unit.sh (Docker, not host pytest)."""
     root = project_root()
-    venv_python = root / ".venv" / "bin" / "python"
-    if install and not venv_python.exists():
+    if install and not (root / ".venv" / "bin" / "python").exists():
         subprocess.run(["./scripts/bootstrap.sh"], cwd=root, check=True)
 
     shell_dirs = [
         root / "scripts",
         root / "scripts" / "chrome",
         root / "scripts" / "git",
+        root / "scripts" / "docker",
         root / "scripts" / "integration",
     ]
     for directory in shell_dirs:
@@ -30,11 +30,5 @@ def run_review(*, install: bool = True, quick: bool = False) -> int:
     if quick:
         return 0
 
-    if not venv_python.exists():
-        raise RuntimeError("Python venv missing after bootstrap")
-
-    pytest = subprocess.run(
-        [str(venv_python), "-m", "pytest", "-q"],
-        cwd=root,
-    )
-    return pytest.returncode
+    result = subprocess.run(["./scripts/test-unit.sh"], cwd=root)
+    return result.returncode
