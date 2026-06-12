@@ -22,13 +22,13 @@ def test_classify_read_operations() -> None:
 
 def test_classify_write_safe_operations() -> None:
     assert classify_operation("commit") == OperationKind.WRITE_SAFE
-    assert classify_operation("start") == OperationKind.WRITE_SAFE
 
 
 def test_classify_write_gated_operations() -> None:
     assert classify_operation("push") == OperationKind.WRITE_GATED
-    assert classify_operation("ship") == OperationKind.WRITE_GATED
+    assert classify_operation("start") == OperationKind.WRITE_GATED
     assert classify_operation("reset") == OperationKind.WRITE_GATED
+    assert classify_operation("docker-clean") == OperationKind.WRITE_GATED
     assert classify_operation("branch-clear") == OperationKind.WRITE_GATED
     assert classify_operation("branch-clear-remote") == OperationKind.WRITE_GATED
 

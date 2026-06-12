@@ -5,7 +5,10 @@ from rich import print as rprint
 
 from shuttle.utils.catalog import (
     QUICK_DEFAULTS,
+    QUICK_DEFAULT_SCRIPTS,
     TOP_LEVEL_COMMANDS,
+    WORKFLOW_CHAIN,
+    WORKFLOW_SHORTCUTS,
     chrome_script_entries,
     doc_entries,
     git_script_entries,
@@ -22,10 +25,20 @@ def links_root() -> None:
     rprint("[bold]shuttle-cli index[/bold]")
     rprint(f"repo: {root}\n")
 
-    rprint("[bold]Quick defaults[/bold] (no prompts — just run)")
+    rprint("[bold]Workflow lifecycle[/bold]")
+    rprint(f"  {WORKFLOW_CHAIN}")
+    for cli_cmd, script, doc, note in WORKFLOW_SHORTCUTS:
+        rprint(
+            f"  [cyan]shuttle {cli_cmd}[/cyan] — {note}"
+            f"\n    [dim]scripts/git/{script} · {doc}[/dim]"
+        )
+
+    rprint("\n[bold]Quick defaults[/bold] (pass [cyan]--yes[/cyan] / [cyan]-y[/cyan] to skip write gates)")
     for cmd, note in QUICK_DEFAULTS:
-        rprint(f"  [cyan]shuttle {cmd}[/cyan] — {note}")
-    rprint("  docs/workflows.md · docs/quick-defaults.md · docs/large-files.md")
+        script = QUICK_DEFAULT_SCRIPTS.get(cmd)
+        suffix = f" · [dim]{script}[/dim]" if script else ""
+        rprint(f"  [cyan]shuttle {cmd}[/cyan] — {note}{suffix}")
+    rprint("  [dim]docs/workflows.md · docs/quick-defaults.md · docs/large-files.md[/dim]")
 
     rprint("\n[bold]Top-level commands[/bold]")
     for name, desc in TOP_LEVEL_COMMANDS:

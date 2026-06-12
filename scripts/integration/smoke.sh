@@ -56,10 +56,11 @@ git -C "$tmpdir/repo" commit -m "initial" >/dev/null
 
 (
   cd "$tmpdir/repo"
-  python -m shuttle git start smoke-branch | grep -q "smoke-branch"
+  python -m shuttle git start smoke-branch --no-prep | grep -q "smoke-branch"
   test "$(git branch --show-current)" = "smoke-branch"
 )
 
-python scripts/integration/check_public_endpoints.py
+python scripts/integration/check_public_commands.py
+python scripts/integration/check_workflow_integration.py
 
 echo "Docker integration smoke passed."

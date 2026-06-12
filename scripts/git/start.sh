@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# @git-start — cursor-skills/skills/git/start
+# @git-start — align main and start feature branch (--no-prep to branch in place)
 set -euo pipefail
 # shellcheck source=_common.sh
 source "$(dirname "$0")/_common.sh"

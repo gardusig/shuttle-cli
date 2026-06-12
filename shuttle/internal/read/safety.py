@@ -28,7 +28,6 @@ READ_OPERATIONS = frozenset(
 WRITE_SAFE_OPERATIONS = frozenset(
     {
         "commit",
-        "start",
         "stash-push",
         "stash-apply",
         "stash-pop",
@@ -47,10 +46,7 @@ WRITE_SAFE_OPERATIONS = frozenset(
 WRITE_GATED_OPERATIONS = frozenset(
     {
         "push",
-        "ship",
-        "prep",
-        "kick",
-        "land",
+        "start",
         "main",
         "reset",
         "branch-delete",
@@ -64,11 +60,11 @@ WRITE_GATED_OPERATIONS = frozenset(
         "tag-push",
         "tag-replace",
         "tag-force-push",
-        "start-align-main",
         "start-push",
         "rebase",
         "revert",
         "cherry-pick",
+        "docker-clean",
     }
 )
 

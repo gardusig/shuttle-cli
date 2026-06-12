@@ -133,14 +133,15 @@ def test_git_large_files(mock_large: MagicMock) -> None:
 
 
 @patch.object(GitShortcuts, "start", return_value="feature-a")
-def test_git_start_safe_by_default(mock_start: MagicMock) -> None:
-    result = runner.invoke(app, ["git", "start", "feature-a"])
+def test_git_start_no_prep_safe_by_default(mock_start: MagicMock) -> None:
+    result = runner.invoke(app, ["git", "start", "feature-a", "--no-prep"])
     assert result.exit_code == 0
     assert "feature-a" in result.stdout
     mock_start.assert_called_once_with(
         "feature-a",
-        align_main=False,
         yes=False,
+        keep_ignored=False,
+        prep=False,
         no_push=True,
     )
 
@@ -183,13 +184,20 @@ def test_git_main_with_yes(mock_align: MagicMock, snapshot: MagicMock) -> None:
     mock_align.assert_called_once_with(yes=True, keep_ignored=False)
 
 
-@patch.object(GitShortcuts, "reset")
+@patch.object(GitShortcuts, "reset", return_value=[])
 def test_git_reset_with_yes(mock_reset: MagicMock, snapshot: MagicMock) -> None:
     with _mock_snapshot(snapshot):
         result = runner.invoke(app, ["git", "reset", "--yes"])
     assert result.exit_code == 0
-    assert "reset complete" in result.stdout
-    mock_reset.assert_called_once_with(None, yes=True, keep_ignored=False)
+    assert "reset" in result.stdout
+    mock_reset.assert_called_once_with(
+        yes=True,
+        keep_ignored=False,
+        main_only=False,
+        all_local=False,
+        branch_message=".",
+        discard=False,
+    )
 
 
 @patch.object(GitShortcuts, "branch_delete")
@@ -350,10 +358,6 @@ GIT_PUBLIC_COMMANDS = (
     "pull",
     "commit",
     "push",
-    "ship",
-    "prep",
-    "kick",
-    "land",
     "start",
     "stash",
     "branch",

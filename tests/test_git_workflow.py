@@ -1,4 +1,4 @@
-"""Workflow shortcuts: prep, kick, land."""
+"""Workflow shortcuts: reset, start, push."""
 
 from __future__ import annotations
 
@@ -21,50 +21,76 @@ def snapshot() -> MagicMock:
     return snap
 
 
-@patch.object(GitShortcuts, "prep")
-def test_git_prep_requires_yes(mock_prep: MagicMock) -> None:
-    result = runner.invoke(app, ["git", "prep"])
+@patch.object(GitShortcuts, "reset")
+def test_git_reset_requires_yes(mock_reset: MagicMock) -> None:
+    result = runner.invoke(app, ["git", "reset"])
     assert result.exit_code != 0
-    mock_prep.assert_not_called()
+    mock_reset.assert_not_called()
 
 
-@patch.object(GitShortcuts, "prep")
-def test_git_prep_with_yes(mock_prep: MagicMock, snapshot: MagicMock) -> None:
+@patch.object(GitShortcuts, "reset", return_value=[])
+def test_git_reset_main_only_with_yes(mock_reset: MagicMock, snapshot: MagicMock) -> None:
     with patch(SNAPSHOT, return_value=snapshot):
-        result = runner.invoke(app, ["git", "prep", "--yes"])
+        result = runner.invoke(app, ["git", "reset", "--yes", "--main-only"])
     assert result.exit_code == 0
-    assert "prep complete" in result.stdout
-    assert "intent: checkout main" in result.stdout
-    mock_prep.assert_called_once_with(yes=True, keep_ignored=False)
+    assert "reset" in result.stdout
+    mock_reset.assert_called_once_with(
+        yes=True,
+        keep_ignored=False,
+        main_only=True,
+        all_local=False,
+        branch_message=".",
+        discard=False,
+    )
 
 
-@patch.object(GitShortcuts, "kick", return_value="issue-9-docker")
+@patch.object(GitShortcuts, "start", return_value="issue-9-docker")
 @patch.object(GitShortcuts, "local_branch_names", return_value=[])
-def test_git_kick_with_yes(
+def test_git_start_with_yes(
     _branches: MagicMock,
-    mock_kick: MagicMock,
+    mock_start: MagicMock,
     snapshot: MagicMock,
 ) -> None:
     with patch(SNAPSHOT, return_value=snapshot):
-        result = runner.invoke(app, ["git", "kick", "issue-9-docker", "--yes"])
+        result = runner.invoke(app, ["git", "start", "issue-9-docker", "--yes"])
     assert result.exit_code == 0
-    assert "kick" in result.stdout
-    mock_kick.assert_called_once_with("issue-9-docker", yes=True, keep_ignored=False)
+    assert "started" in result.stdout
+    mock_start.assert_called_once_with(
+        "issue-9-docker",
+        yes=True,
+        keep_ignored=False,
+        prep=True,
+        no_push=True,
+    )
 
 
-@patch.object(GitShortcuts, "land", return_value=["feat-a"])
-def test_git_land_with_yes(mock_land: MagicMock, snapshot: MagicMock) -> None:
+@patch.object(GitShortcuts, "reset", return_value=["feat-a"])
+def test_git_reset_with_yes(mock_reset: MagicMock, snapshot: MagicMock) -> None:
     with patch(SNAPSHOT, return_value=snapshot):
-        result = runner.invoke(app, ["git", "land", "--yes"])
+        result = runner.invoke(app, ["git", "reset", "--yes"])
     assert result.exit_code == 0
-    assert "landed" in result.stdout
-    mock_land.assert_called_once_with(yes=True, all_local=False, keep_ignored=False)
+    assert "reset" in result.stdout
+    mock_reset.assert_called_once_with(
+        yes=True,
+        keep_ignored=False,
+        main_only=False,
+        all_local=False,
+        branch_message=".",
+        discard=False,
+    )
 
 
-@patch.object(GitShortcuts, "land")
-def test_git_land_all_local(mock_land: MagicMock, snapshot: MagicMock) -> None:
-    mock_land.return_value = ["a", "b"]
+@patch.object(GitShortcuts, "reset")
+def test_git_reset_all_local(mock_reset: MagicMock, snapshot: MagicMock) -> None:
+    mock_reset.return_value = ["a", "b"]
     with patch(SNAPSHOT, return_value=snapshot):
-        result = runner.invoke(app, ["git", "land", "--yes", "--all-local"])
+        result = runner.invoke(app, ["git", "reset", "--yes", "--all-local"])
     assert result.exit_code == 0
-    mock_land.assert_called_once_with(yes=True, all_local=True, keep_ignored=False)
+    mock_reset.assert_called_once_with(
+        yes=True,
+        keep_ignored=False,
+        main_only=False,
+        all_local=True,
+        branch_message=".",
+        discard=False,
+    )

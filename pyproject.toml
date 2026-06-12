@@ -46,3 +46,5 @@ branch = false
 fail_under = 80
 show_missing = true
 skip_empty = true
+
+# Unit CI uses coverage-unit.ini (omits shuttle/integration/*; integration covered in Docker job).

@@ -22,28 +22,30 @@ def test_git_push_requires_yes(mock_push: MagicMock) -> None:
     mock_push.assert_not_called()
 
 
-@patch.object(GitShortcuts, "push")
+@patch.object(GitShortcuts, "push", return_value="feat")
 def test_git_push_with_yes(mock_push: MagicMock) -> None:
     result = runner.invoke(app, ["git", "push", "--yes"])
     assert result.exit_code == 0
+    assert "pushed" in result.stdout
     mock_push.assert_called_once_with(allow_main=False, message=".", yes=True)
 
 
 @patch.object(GitShortcuts, "start", return_value="feature-x")
-def test_git_start_no_align_by_default(mock_start: MagicMock) -> None:
-    result = runner.invoke(app, ["git", "start", "feature-x"])
+def test_git_start_no_prep_without_yes(mock_start: MagicMock) -> None:
+    result = runner.invoke(app, ["git", "start", "feature-x", "--no-prep"])
     assert result.exit_code == 0
     mock_start.assert_called_once_with(
         "feature-x",
-        align_main=False,
         yes=False,
+        keep_ignored=False,
+        prep=False,
         no_push=True,
     )
 
 
 @patch.object(GitShortcuts, "start", return_value="feature-x")
-def test_git_start_with_align_requires_yes(mock_start: MagicMock) -> None:
-    result = runner.invoke(app, ["git", "start", "feature-x", "--align-main"])
+def test_git_start_prep_requires_yes(mock_start: MagicMock) -> None:
+    result = runner.invoke(app, ["git", "start", "feature-x"])
     assert result.exit_code != 0
     mock_start.assert_not_called()
 

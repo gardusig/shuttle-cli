@@ -18,7 +18,11 @@ def test_docker_harness_files_exist() -> None:
         ".dockerignore",
         "scripts/test-in-docker.sh",
         "scripts/integration/smoke.sh",
+        "scripts/integration/check_public_commands.py",
         "scripts/integration/check_public_endpoints.py",
+        "scripts/integration/check_docker_commands.py",
+        "scripts/test-unit.sh",
+        "scripts/test-integration.sh",
     ):
         path = ROOT / rel
         assert path.exists(), f"missing {rel}"
@@ -43,22 +47,22 @@ def test_ci_workflow_runs_on_pull_request_with_both_jobs() -> None:
     assert "pytest" in workflow
 
 
-def test_docker_smoke_runs_public_endpoint_checker() -> None:
+def test_docker_smoke_runs_public_command_checker() -> None:
     smoke = (ROOT / "scripts" / "integration" / "smoke.sh").read_text()
-    assert "check_public_endpoints.py" in smoke
+    assert "check_public_commands.py" in smoke
     assert "SHUTTLE_SKIP_CHROME_AUTOMATION=1" in smoke
 
 
-def test_public_endpoint_registry_covers_all_git_commands() -> None:
-    from shuttle.integration.public_endpoints import (
-        assert_every_git_subcommand_checked,
-        assert_every_top_level_command_checked,
-        assert_registry_covers_git_commands,
-    )
+def test_ci_workflow_runs_live_docker_checks() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "test.yml").read_text()
+    assert "check_docker_commands.py --live" in workflow
+    assert "test-unit.sh" in workflow
 
-    assert_registry_covers_git_commands()
-    assert_every_git_subcommand_checked()
-    assert_every_top_level_command_checked()
+
+def test_public_command_registry_covers_all_commands() -> None:
+    from shuttle.integration.public_commands import assert_public_command_registry_complete
+
+    assert_public_command_registry_complete()
 
 
 @pytest.mark.integration

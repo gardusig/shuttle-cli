@@ -24,8 +24,8 @@ jobs:
         run: ./scripts/bootstrap.sh
       - name: Shell syntax (chrome)
         run: bash -n scripts/chrome/*.sh
-      - name: Pytest (≥80% coverage)
-        run: source .venv/bin/activate && pytest -q --cov=shuttle --cov-report=term-missing --cov-fail-under=80
+      - name: Unit tests (≥80% coverage, excludes shuttle/integration)
+        run: ./scripts/test-unit.sh
 
   integration:
     name: Integration tests (Docker)
@@ -48,3 +48,12 @@ jobs:
           SHUTTLE_DOCKER_IMAGE: shuttle-cli-integration:ci
           SHUTTLE_DOCKER_SKIP_BUILD: "1"
         run: ./scripts/test-in-docker.sh
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bootstrap for live Docker CLI checks
+        run: ./scripts/bootstrap.sh
+      - name: Live shuttle docker integration (host daemon)
+        run: |
+          source .venv/bin/activate
+          python scripts/integration/check_docker_commands.py --live

@@ -5,6 +5,7 @@ import typer
 from shuttle import __version__
 from shuttle.commands.backup import backup_app
 from shuttle.commands.bookmarks import bookmarks_app
+from shuttle.commands.docker import docker_app
 from shuttle.commands.drives import drives_app
 from shuttle.commands.git import git_app
 from shuttle.commands.links import links_app
@@ -25,6 +26,7 @@ app.add_typer(restore_app, name="restore")
 app.add_typer(drives_app, name="drives")
 app.add_typer(notion_app, name="notion")
 app.add_typer(bookmarks_app, name="bookmarks")
+app.add_typer(docker_app, name="docker")
 
 
 @app.callback(invoke_without_command=True)

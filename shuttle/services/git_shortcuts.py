@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import time
 from pathlib import Path
 
 from shuttle.utils.process import GitCommandError, run_git
@@ -67,7 +66,37 @@ class GitShortcuts:
                     result.stderr,
                 )
 
-    def align_main(self, *, yes: bool = False, keep_ignored: bool = False) -> None:
+    def _clean_exclude_args(self) -> list[str]:
+        """Skip active venv during git clean -fdx (avoid deleting the running interpreter)."""
+        excludes: list[str] = []
+        seen: set[str] = set()
+        repo = Path(self.top).resolve()
+
+        def add_exclude(rel: str) -> None:
+            if rel and rel not in seen:
+                seen.add(rel)
+                excludes.extend(["-e", rel])
+
+        venv = os.environ.get("VIRTUAL_ENV")
+        if venv:
+            try:
+                add_exclude(Path(venv).resolve().relative_to(repo).as_posix())
+            except ValueError:
+                pass
+
+        if (repo / ".venv").is_dir():
+            add_exclude(".venv")
+
+        return excludes
+
+    def _clean_worktree(self, *, keep_ignored: bool) -> None:
+        if keep_ignored:
+            run_git(["clean", "-fd"], cwd=self.top)
+            return
+        run_git(["clean", "-fdx", *self._clean_exclude_args()], cwd=self.top)
+
+    def sync_main(self, *, yes: bool = False, keep_ignored: bool = False) -> None:
+        """Checkout main, fetch, fast-forward pull when upstream exists, else hard-reset to remote main."""
         if self.is_dirty() and not yes:
             raise RuntimeError(
                 "Working tree is dirty. Re-run with --yes to discard local changes."
@@ -75,10 +104,31 @@ class GitShortcuts:
         self.checkout_main()
         self.fetch_all()
         ref = self.canonical_main_ref()
-        run_git(["rev-parse", ref], cwd=self.top)
-        run_git(["reset", "--hard", ref], cwd=self.top)
-        clean_args = ["clean", "-fd"] if keep_ignored else ["clean", "-fdx"]
-        run_git(clean_args, cwd=self.top)
+        if self.has_upstream():
+            pull = run_git(["pull", "--ff-only"], cwd=self.top, check=False)
+            if pull.returncode != 0:
+                run_git(["rev-parse", ref], cwd=self.top)
+                run_git(["reset", "--hard", ref], cwd=self.top)
+        else:
+            result = run_git(["rev-parse", ref], cwd=self.top, check=False)
+            if result.returncode == 0:
+                run_git(["reset", "--hard", ref], cwd=self.top)
+        if self.is_dirty() and yes:
+            run_git(["rev-parse", ref], cwd=self.top)
+            run_git(["reset", "--hard", ref], cwd=self.top)
+        self._clean_worktree(keep_ignored=keep_ignored)
+
+    def align_main(self, *, yes: bool = False, keep_ignored: bool = False) -> None:
+        self.sync_main(yes=yes, keep_ignored=keep_ignored)
+
+    def _prepare_leave_branch(self, *, message: str, discard: bool) -> None:
+        if self.current_branch() == "main" or not self.is_dirty():
+            return
+        if discard:
+            run_git(["reset", "--hard", "HEAD"], cwd=self.top)
+            run_git(["clean", "-fd", *self._clean_exclude_args()], cwd=self.top)
+            return
+        self.commit(message)
 
     def commit(self, message: str = ".", *, paths: list[str] | None = None) -> bool:
         if paths:
@@ -91,19 +141,18 @@ class GitShortcuts:
         run_git(["commit", "-m", message], cwd=self.top)
         return True
 
-    def push(self, *, allow_main: bool = False, message: str = ".", yes: bool = False) -> None:
+    def push(self, *, allow_main: bool = False, message: str = ".", yes: bool = False) -> str:
+        """Stage if dirty, commit, and push. On main, start a random branch first."""
         if not yes:
             raise RuntimeError("Push requires confirmation. Pass --yes to proceed.")
-        branch = self.current_branch()
-        if branch == "main" and not allow_main:
-            raise RuntimeError(
-                "Refusing to push main. Create a feature branch or pass --allow-main."
-            )
+        if self.current_branch() == "main" and not allow_main:
+            self.start(None, yes=True, prep=False)
         if self.is_dirty():
             self.commit(message)
         if not self.remote_exists("origin"):
             raise RuntimeError("No origin remote configured.")
         run_git(["push", "-u", "origin", "HEAD"], cwd=self.top)
+        return self.current_branch()
 
     def pull(self, *, merge_branch: str | None = None) -> None:
         self.fetch_all()
@@ -120,15 +169,16 @@ class GitShortcuts:
         self,
         branch: str | None = None,
         *,
-        align_main: bool = False,
         yes: bool = False,
+        keep_ignored: bool = False,
+        prep: bool = True,
         no_push: bool = True,
         message: str = ".",
     ) -> str:
-        """Create a branch from current state. Main alignment is opt-in only."""
-        if align_main:
-            self.align_main(yes=yes)
-        name = branch or f"wip-{int(time.time())}"
+        """Create a feature branch. With prep (default), align main first — issue workflow."""
+        if prep:
+            self.align_main(yes=yes, keep_ignored=keep_ignored)
+        name = branch or suggest_branch_name(self.local_branch_names(exclude_main=False))
         run_git(["checkout", "-b", name], cwd=self.top)
         if not no_push:
             self.push(message=message, yes=yes)
@@ -206,38 +256,23 @@ class GitShortcuts:
             deleted.append(name)
         return deleted
 
-    def post_merge_cleanup(self, *, yes: bool = False) -> list[str]:
-        self.align_main(yes=yes)
-        return self.branch_delete_all_merged(yes=yes)
-
-    def prep(self, *, yes: bool = False, keep_ignored: bool = False) -> None:
-        """Checkout main, fetch, reset to canonical main, clean (-fdx by default)."""
-        self.align_main(yes=yes, keep_ignored=keep_ignored)
-
-    def kick(
+    def reset(
         self,
-        branch: str | None = None,
         *,
         yes: bool = False,
         keep_ignored: bool = False,
-    ) -> str:
-        """Align main, then create a new feature branch."""
-        self.align_main(yes=yes, keep_ignored=keep_ignored)
-        name = branch or suggest_branch_name(self.local_branch_names(exclude_main=False))
-        run_git(["checkout", "-b", name], cwd=self.top)
-        return name
-
-    def land(
-        self,
-        *,
-        yes: bool = False,
+        main_only: bool = False,
         all_local: bool = False,
-        keep_ignored: bool = False,
+        branch_message: str = ".",
+        discard: bool = False,
     ) -> list[str]:
-        """After merge: align main and remove local feature branches."""
+        """Return to synced main; commit or discard dirty work on the current branch first."""
         if not yes:
-            raise RuntimeError("Pass --yes to land.")
-        self.align_main(yes=True, keep_ignored=keep_ignored)
+            raise RuntimeError("Pass --yes to reset.")
+        self._prepare_leave_branch(message=branch_message, discard=discard)
+        self.sync_main(yes=True, keep_ignored=keep_ignored)
+        if main_only:
+            return []
         if all_local:
             deleted: list[str] = []
             for name in self.local_branch_names(exclude_main=True):
@@ -245,6 +280,9 @@ class GitShortcuts:
                 deleted.append(name)
             return deleted
         return self.branch_delete_all_merged(yes=True)
+
+    def post_merge_cleanup(self, *, yes: bool = False) -> list[str]:
+        return self.reset(yes=yes)
 
     def local_branch_names(self, *, exclude_main: bool = True) -> list[str]:
         out = run_git(
@@ -325,24 +363,6 @@ class GitShortcuts:
         target = onto or self.canonical_main_ref()
         self.fetch_all()
         run_git(["rebase", target], cwd=self.top)
-
-    def reset(
-        self,
-        target: str | None = None,
-        *,
-        yes: bool = False,
-        keep_ignored: bool = False,
-    ) -> None:
-        if not yes:
-            raise RuntimeError("Pass --yes to reset and clean the working tree.")
-        self.fetch_all()
-        ref = target or "@{u}"
-        result = run_git(["rev-parse", ref], cwd=self.top, check=False)
-        if result.returncode != 0:
-            ref = self.canonical_main_ref()
-        run_git(["reset", "--hard", ref], cwd=self.top)
-        clean_args = ["clean", "-fd"] if keep_ignored else ["clean", "-fdx"]
-        run_git(clean_args, cwd=self.top)
 
     def revert(
         self,

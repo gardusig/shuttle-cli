@@ -10,6 +10,9 @@ runner = CliRunner()
 def test_links_lists_docs_and_defaults() -> None:
     result = runner.invoke(app, ["links"])
     assert result.exit_code == 0
+    assert "Workflow lifecycle" in result.stdout
+    assert "reset → start → push" in result.stdout
+    assert "scripts/git/push.sh" in result.stdout
     assert "Quick defaults" in result.stdout
     assert "docs/large-files.md" in result.stdout
     assert "scripts/git/start.sh" in result.stdout

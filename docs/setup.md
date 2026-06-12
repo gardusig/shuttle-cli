@@ -29,4 +29,4 @@ shuttle --version
 - **`git` not in a repository** — run commands from a git worktree root.
 - **Refusing to push** — pass `--yes` to confirm: `shuttle git push --yes`.
 - **Dirty tree on `main`** — pass `--yes` to destructive align/reset commands.
-- **`shuttle git start` deleted my files** — use default `start` (no `--align-main`). Alignment is opt-in.
+- **`shuttle git start` deleted my files** — use `--no-prep` to branch in place; default `start` aligns main first.
