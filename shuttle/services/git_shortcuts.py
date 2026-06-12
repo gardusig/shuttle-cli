@@ -296,18 +296,19 @@ class GitShortcuts:
         if not self.remote_exists(remote):
             return []
         out = run_git(
-            ["for-each-ref", "--format=%(refname:short)", f"refs/remotes/{remote}/"],
+            ["for-each-ref", "--format=%(refname)", f"refs/remotes/{remote}/"],
             cwd=self.top,
             check=False,
         ).stdout
-        prefix = f"{remote}/"
+        remote_prefix = f"refs/remotes/{remote}/"
         names: list[str] = []
         for line in out.splitlines():
             ref = line.strip()
-            if not ref or ref.endswith("/HEAD") or ref == f"{remote}/HEAD":
+            if not ref or not ref.startswith(remote_prefix):
                 continue
-            short = ref[len(prefix) :] if ref.startswith(prefix) else ref
-            if short in {"main", "HEAD"}:
+            short = ref[len(remote_prefix) :]
+            # Skip origin/HEAD symref (refname:short would appear as bare "origin").
+            if short in {"HEAD", "main"}:
                 continue
             names.append(short)
         return sorted(set(names))

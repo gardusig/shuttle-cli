@@ -308,11 +308,25 @@ def test_branch_delete_all_merged(mock_run: MagicMock, svc: GitShortcuts) -> Non
 def test_local_and_remote_branch_names(mock_run: MagicMock, svc: GitShortcuts) -> None:
     mock_run.side_effect = [
         _ok("feat\nmain\n"),
-        _ok("origin/feat\norigin/main\norigin/HEAD\n"),
+        _ok(
+            "refs/remotes/origin/feat\n"
+            "refs/remotes/origin/main\n"
+            "refs/remotes/origin/HEAD\n"
+        ),
     ]
     with patch.object(svc, "remote_exists", return_value=True):
         assert svc.local_branch_names() == ["feat"]
         assert svc.remote_branch_names() == ["feat"]
+
+
+@patch(PATCH)
+def test_remote_branch_names_skips_head_symref_short_name(mock_run: MagicMock, svc: GitShortcuts) -> None:
+    """origin/HEAD has refname:short 'origin' — must not become a deletable branch."""
+    mock_run.return_value = _ok(
+        "refs/remotes/origin/HEAD\nrefs/remotes/origin/wip-260611-001\n"
+    )
+    with patch.object(svc, "remote_exists", return_value=True):
+        assert svc.remote_branch_names() == ["wip-260611-001"]
 
 
 @patch(PATCH)
