@@ -315,3 +315,19 @@ def test_git_tag_default_name(
     result = runner.invoke(app, ["git", "tag", "--yes"])
     assert result.exit_code == 0
     mock_create.assert_called_once_with("2026-06-12", replace=False)
+
+
+@patch.object(GitShortcuts, "current_branch", return_value="kappap")
+def test_git_branch_current(mock_branch: MagicMock) -> None:
+    result = runner.invoke(app, ["git", "branch-current"])
+    assert result.exit_code == 0
+    assert result.stdout.strip() == "kappap"
+    mock_branch.assert_called_once()
+
+
+@patch.object(GitShortcuts, "diff_stat", return_value=" 2 files changed\n")
+def test_git_diff_stat(mock_diff: MagicMock) -> None:
+    result = runner.invoke(app, ["git", "diff-stat", "--base", "main"])
+    assert result.exit_code == 0
+    assert "files changed" in result.stdout
+    mock_diff.assert_called_once_with("main", "HEAD")
