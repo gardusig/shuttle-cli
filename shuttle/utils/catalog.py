@@ -92,6 +92,7 @@ CHROME_SCRIPTS: tuple[tuple[str, str], ...] = (
 
 TOP_LEVEL_COMMANDS: tuple[tuple[str, str], ...] = (
     ("git / g", "git shortcuts (see shuttle git --help)"),
+    ("gh", "GitHub via gh — issues, labels, PRs, backlog (see docs/gh.md)"),
     ("restore", "restore workflows (placeholder)"),
     ("drive", "git-tags local store (iCloud) + cloud upload — status, ingest, upload"),
     ("chrome", "Chrome browser — bookmarks ingest / deploy"),

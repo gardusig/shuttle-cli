@@ -203,6 +203,7 @@ See [docs/docker.md](docs/docker.md).
 
 - [Setup](docs/setup.md)
 - [Git commands](docs/git.md)
+- [GitHub (`shuttle gh`)](docs/gh.md)
 - [Drive (local + cloud)](docs/drive.md)
 - [Chrome](docs/bookmarks.md) · [Notion](docs/notion.md)
 - [Docker integration](docs/docker.md)

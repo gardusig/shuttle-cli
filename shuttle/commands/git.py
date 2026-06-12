@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -683,3 +684,95 @@ def large_files_cmd(
     rows = _svc().large_files(top_n, worktree=worktree)
     for size, path in rows:
         rprint(f"{size:>12}  {path}")
+
+
+@git_app.command("branch-current")
+def branch_current_cmd() -> None:
+    """Print current branch name (read-only)."""
+    typer.echo(_svc().current_branch())
+
+
+@git_app.command("diff-stat")
+def diff_stat_cmd(
+    base: str = typer.Option(..., "--base", help="Base ref for three-dot diff stat."),
+    head: str = typer.Option("HEAD", "--head"),
+) -> None:
+    """Diff stat vs base (read-only)."""
+    typer.echo(_svc().diff_stat(base, head).rstrip())
+
+
+@git_app.command("diff-names")
+def diff_names_cmd(
+    base: str = typer.Option(..., "--base"),
+    head: str = typer.Option("HEAD", "--head"),
+) -> None:
+    """Name-status diff vs base (read-only)."""
+    typer.echo(_svc().diff_name_status(base, head).rstrip())
+
+
+@git_app.command("log-oneline")
+def log_oneline_cmd(
+    base: str = typer.Option(..., "--base"),
+    head: str = typer.Option("HEAD", "--head"),
+    max_count: int | None = typer.Option(None, "--max-count"),
+) -> None:
+    """Oneline log for base..head (read-only)."""
+    typer.echo(_svc().log_oneline(base, head, max_count=max_count).rstrip())
+
+
+@git_app.command("log-messages")
+def log_messages_cmd(
+    base: str = typer.Option(..., "--base"),
+    head: str = typer.Option("HEAD", "--head"),
+    max_count: int | None = typer.Option(None, "--max-count"),
+) -> None:
+    """Full commit subject/body log for base..head (read-only)."""
+    typer.echo(_svc().log_messages(base, head, max_count=max_count).rstrip())
+
+
+@git_app.command("rev-list-count")
+def rev_list_count_cmd(
+    base: str = typer.Option(..., "--base"),
+    head: str = typer.Option("HEAD", "--head"),
+) -> None:
+    """Ahead/behind counts for base...head (read-only)."""
+    left, right = _svc().rev_list_count(base, head)
+    typer.echo(json.dumps({"behind": left, "ahead": right}))
+
+
+@git_app.command("remote-url")
+def remote_url_cmd(
+    name: str = typer.Argument("origin", help="Remote name"),
+) -> None:
+    """Print remote URL (read-only)."""
+    typer.echo(_svc().remote_url(name))
+
+
+@git_app.command("rev-parse")
+def rev_parse_cmd(
+    ref: str = typer.Argument(..., help="Git ref to resolve"),
+) -> None:
+    """Resolve ref to SHA (read-only)."""
+    typer.echo(_svc().rev_parse(ref))
+
+
+@git_app.command("merge-base-check")
+def merge_base_check_cmd(
+    base: str = typer.Option(..., "--base"),
+    head: str = typer.Option("HEAD", "--head"),
+) -> None:
+    """True when base is ancestor of head (read-only)."""
+    typer.echo(json.dumps({"is_ancestor": _svc().merge_base_is_ancestor(base, head)}))
+
+
+@git_app.command("publish-check")
+def publish_check_cmd(
+    remote: str = typer.Option("origin", "--remote"),
+    branch: str | None = typer.Option(None, "--branch"),
+) -> None:
+    """Check whether HEAD is on remote branch (read-only)."""
+    svc = _svc()
+    br = branch or svc.current_branch()
+    head = svc.rev_parse("HEAD")
+    on_remote = svc.commit_on_remote_branch(remote, br, head)
+    typer.echo(json.dumps({"branch": br, "commit": head, "on_remote": on_remote}))
